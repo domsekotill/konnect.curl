@@ -1,0 +1,16 @@
+# Standard python boilerplate
+*.py[co]
+
+# Setuptools / Pip
+.eggs
+*.egg-info
+*.dist-info
+build/
+dist/
+
+# unit-testing, coverage, etc.
+/results/
+.noseids
+
+# pre-commit hooks
+/.*cache/
