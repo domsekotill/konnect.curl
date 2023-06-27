@@ -35,6 +35,7 @@ class Multi:
 		self._handler.setopt(pycurl.M_TIMERFUNCTION, self._add_timer_evt)
 		self._events = dict[int, SocketEvt]()
 		self._delay = -1
+		self._handles = 0
 		self._perform_cond = anyio.Condition()
 		self._governor_delegated = False
 		self._completed = dict[pycurl.Curl, int]()
@@ -107,7 +108,13 @@ class Multi:
 		# iteratively yield them
 		n_msgs = -1
 		while n_msgs:
-			n_msgs, complete, failed = self._handler.info_read(10)
+			# There is a bug in PyCurl affecting info_read; to work around it the
+			# 'max_objects' argument must be AT LEAST the number of waiting messages, which
+			# can be up to the total number of active handles. This makes the loop
+			# superfluous but if the bug is fixed 'max_objects' could be replaced with
+			# a static value to constrain memory usage and make it more predictable, and
+			# remove the need to track the number of active handles.
+			n_msgs, complete, failed = self._handler.info_read(self._handles)
 			yield from ((handle, pycurl.E_OK) for handle in complete)
 			yield from ((handle, res) for (handle, res, _) in failed)
 
@@ -146,6 +153,7 @@ class Multi:
 		"""
 		res: int|None = None
 		self._handler.add_handle(handle)
+		self._handles += 1
 		while res is None:
 			# If no task is governing the transfer manager, self-delegate the role to
 			# ourselves and govern transfers until `handle` completes.
@@ -160,6 +168,7 @@ class Multi:
 			else:
 				res = await self._await_notification(handle)
 		self._handler.remove_handle(handle)
+		self._handles -= 1
 		if res != pycurl.E_OK:
 			raise CurlError(res, handle.errstr())
 
