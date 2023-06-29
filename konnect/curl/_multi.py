@@ -34,7 +34,7 @@ class Multi:
 		self._handler.setopt(pycurl.M_SOCKETFUNCTION, self._add_socket_evt)
 		self._handler.setopt(pycurl.M_TIMERFUNCTION, self._add_timer_evt)
 		self._events = dict[int, SocketEvt]()
-		self._delay = -1
+		self._deadline = -1
 		self._handles = 0
 		self._perform_cond = anyio.Condition()
 		self._governor_delegated = False
@@ -53,9 +53,9 @@ class Multi:
 	def _add_timer_evt(self, delay: int) -> None:
 		# Callback registered with CURLMOPT_TIMERFUNCTION, registers when the transfer
 		# manager next wants to be activated if no prior events occur, in milliseconds.
-		delay = delay * MILLISECONDS
-		if self._delay < 0 or delay < self._delay:
-			self._delay = delay
+		self._deadline = \
+			-1 if delay < 0 else \
+			int(anyio.current_time()) * SECONDS + delay * MILLISECONDS
 
 	async def _wait_readable(self, fd: int, channel: Channel[Event]) -> None:
 		await anyio.wait_socket_readable(fd)  # type: ignore[arg-type]
@@ -74,7 +74,7 @@ class Multi:
 		# of it, then return the number of active transfers
 
 		# Shortcut if no events are registered, or the only event is an immediate timeout
-		if not self._events and self._delay <= 0:
+		if not self._events and self._deadline <= 0:
 			_, running = self._handler.socket_action(pycurl.SOCKET_TIMEOUT, 0)
 			return running
 
@@ -86,9 +86,8 @@ class Multi:
 					tasks.start_soon(self._wait_readable, fd, chan)
 				if SocketEvt.OUT in evt:
 					tasks.start_soon(self._wait_writable, fd, chan)
-			if self._delay >= 0:
-				delay = anyio.current_time() + self._delay / SECONDS
-				tasks.start_soon(self._wait_until, delay, chan)
+			if self._deadline >= 0:
+				tasks.start_soon(self._wait_until, self._deadline/SECONDS, chan)
 			resp = await chan.receive()
 			tasks.cancel_scope.cancel()
 
