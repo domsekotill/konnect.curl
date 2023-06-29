@@ -3,8 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from os import dup
+from socket import SO_PROTOCOL  # type: ignore[attr-defined]  # Probable typo in typeshed
+from socket import SO_TYPE
+from socket import SOL_SOCKET
+from socket import socket as Socket
 from typing import Final
 from typing import Literal
+from typing import Self
 from typing import TypeAlias
 
 import anyio
@@ -14,7 +20,7 @@ from anyio.abc import ObjectStream as Channel
 from ._enums import SocketEvt
 from ._exceptions import CurlError
 
-Event: TypeAlias = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], int]
+Event: TypeAlias = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], Socket]
 
 MILLISECONDS: Final = 1
 SECONDS: Final = 1000
@@ -33,7 +39,7 @@ class Multi:
 		self._handler = pycurl.CurlMulti()
 		self._handler.setopt(pycurl.M_SOCKETFUNCTION, self._add_socket_evt)
 		self._handler.setopt(pycurl.M_TIMERFUNCTION, self._add_timer_evt)
-		self._events = dict[int, SocketEvt]()
+		self._events = dict[int, tuple[Socket, SocketEvt]]()
 		self._deadline = -1
 		self._handles = 0
 		self._perform_cond = anyio.Condition()
@@ -47,8 +53,11 @@ class Multi:
 		if what == SocketEvt.REMOVE:
 			assert socket in self._events, f"file descriptor {socket} not in events"
 			del self._events[socket]
+		elif socket in self._events:
+			socket_, __ = self._events[socket]
+			self._events[socket] = socket_, what
 		else:
-			self._events[socket] = what
+			self._events[socket] = _ExternalSocket.from_fd(socket), what
 
 	def _add_timer_evt(self, delay: int) -> None:
 		# Callback registered with CURLMOPT_TIMERFUNCTION, registers when the transfer
@@ -57,13 +66,13 @@ class Multi:
 			-1 if delay < 0 else \
 			int(anyio.current_time()) * SECONDS + delay * MILLISECONDS
 
-	async def _wait_readable(self, fd: int, channel: Channel[Event]) -> None:
-		await anyio.wait_socket_readable(fd)  # type: ignore[arg-type]
-		await channel.send((SocketEvt.IN, fd))
+	async def _wait_readable(self, socket: Socket, channel: Channel[Event]) -> None:
+		await anyio.wait_socket_readable(socket)
+		await channel.send((SocketEvt.IN, socket))
 
-	async def _wait_writable(self, fd: int, channel: Channel[Event]) -> None:
-		await anyio.wait_socket_writable(fd)  # type: ignore[arg-type]
-		await channel.send((SocketEvt.OUT, fd))
+	async def _wait_writable(self, socket: Socket, channel: Channel[Event]) -> None:
+		await anyio.wait_socket_writable(socket)
+		await channel.send((SocketEvt.OUT, socket))
 
 	async def _wait_until(self, time: float, channel: Channel[None]) -> None:
 		await anyio.sleep_until(time)
@@ -81,11 +90,11 @@ class Multi:
 		# Start concurrent tasks awaiting each of the registered events, await a response
 		# from the first task to wake and send one.
 		async with anyio.create_task_group() as tasks, _make_evt_channel() as chan:
-			for fd, evt in self._events.items():
+			for socket, evt in self._events.values():
 				if SocketEvt.IN in evt:
-					tasks.start_soon(self._wait_readable, fd, chan)
+					tasks.start_soon(self._wait_readable, socket, chan)
 				if SocketEvt.OUT in evt:
-					tasks.start_soon(self._wait_writable, fd, chan)
+					tasks.start_soon(self._wait_writable, socket, chan)
 			if self._deadline >= 0:
 				tasks.start_soon(self._wait_until, self._deadline/SECONDS, chan)
 			resp = await chan.receive()
@@ -96,10 +105,10 @@ class Multi:
 		match resp:
 			case None:
 				_, running = self._handler.socket_action(pycurl.SOCKET_TIMEOUT, 0)
-			case SocketEvt.IN, int(fd):
-				_, running = self._handler.socket_action(fd, pycurl.CSELECT_IN)
-			case SocketEvt.OUT, int(fd):
-				_, running = self._handler.socket_action(fd, pycurl.CSELECT_OUT)  # type: ignore[unreachable]
+			case SocketEvt.IN, Socket() as socket:
+				_, running = self._handler.socket_action(socket.fileno(), pycurl.CSELECT_IN)
+			case SocketEvt.OUT, Socket() as socket:
+				_, running = self._handler.socket_action(socket.fileno(), pycurl.CSELECT_OUT)  # type: ignore[unreachable]
 		return running
 
 	def _yield_complete(self) -> Iterator[tuple[pycurl.Curl, int]]:
@@ -170,6 +179,32 @@ class Multi:
 		self._handles -= 1
 		if res != pycurl.E_OK:
 			raise CurlError(res, handle.errstr())
+
+
+class _ExternalSocket(Socket):
+	"""
+	A non-closing socket.socket subclass
+
+	When instances are garbage-collected they do not close the underlying file descriptor.
+	Used for sockets managed in a third-party library (libcurl in this case) which are
+	passed as file descriptors.  The file descriptor MUST match, so duplication is not
+	a possibility
+	"""
+
+	def __del__(self) -> None:
+		return
+
+	@classmethod
+	def from_fd(cls, fd: int, /) -> Self:
+		"""
+		Create an instance from the file descriptor of an open socket
+		"""
+		# Create a temporary socket instance to get socket type and protocol (no low level
+		# getsockopt()). FD must be duplicated as it will be closed when destroyed.
+		socket = Socket(fileno=dup(fd))
+		stype = socket.getsockopt(SOL_SOCKET, SO_TYPE)
+		proto = socket.getsockopt(SOL_SOCKET, SO_PROTOCOL)
+		return cls(socket.family, stype, proto, fd)
 
 
 def _make_evt_channel() -> Channel[Event|None]:
