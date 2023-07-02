@@ -39,7 +39,7 @@ class Multi:
 		self._handler = pycurl.CurlMulti()
 		self._handler.setopt(pycurl.M_SOCKETFUNCTION, self._add_socket_evt)
 		self._handler.setopt(pycurl.M_TIMERFUNCTION, self._add_timer_evt)
-		self._events = dict[int, tuple[Socket, SocketEvt]]()
+		self._io_events = dict[int, tuple[Socket, SocketEvt]]()
 		self._deadline = -1
 		self._handles = 0
 		self._perform_cond = anyio.Condition()
@@ -51,13 +51,13 @@ class Multi:
 		# transfer manager wants to be activated in response to.
 		what = SocketEvt(what)
 		if what == SocketEvt.REMOVE:
-			assert socket in self._events, f"file descriptor {socket} not in events"
-			del self._events[socket]
-		elif socket in self._events:
-			socket_, __ = self._events[socket]
-			self._events[socket] = socket_, what
+			assert socket in self._io_events, f"file descriptor {socket} not in events"
+			del self._io_events[socket]
+		elif socket in self._io_events:
+			socket_, __ = self._io_events[socket]
+			self._io_events[socket] = socket_, what
 		else:
-			self._events[socket] = _ExternalSocket.from_fd(socket), what
+			self._io_events[socket] = _ExternalSocket.from_fd(socket), what
 
 	def _add_timer_evt(self, delay: int) -> None:
 		# Callback registered with CURLMOPT_TIMERFUNCTION, registers when the transfer
@@ -83,14 +83,14 @@ class Multi:
 		# of it, then return the number of active transfers
 
 		# Shortcut if no events are registered, or the only event is an immediate timeout
-		if not self._events and self._deadline <= 0:
+		if not self._io_events and self._deadline <= 0:
 			_, running = self._handler.socket_action(pycurl.SOCKET_TIMEOUT, 0)
 			return running
 
 		# Start concurrent tasks awaiting each of the registered events, await a response
 		# from the first task to wake and send one.
 		async with anyio.create_task_group() as tasks, _make_evt_channel() as chan:
-			for socket, evt in self._events.values():
+			for socket, evt in self._io_events.values():
 				if SocketEvt.IN in evt:
 					tasks.start_soon(self._wait_readable, socket, chan)
 				if SocketEvt.OUT in evt:
