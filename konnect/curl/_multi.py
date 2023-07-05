@@ -12,6 +12,7 @@ from typing import Final
 from typing import Literal
 from typing import Self
 from typing import TypeAlias
+from typing import TypeVar
 
 import anyio
 import pycurl
@@ -19,7 +20,9 @@ from anyio.abc import ObjectStream as Channel
 
 from ._enums import SocketEvt
 from ._exceptions import CurlError
+from .abc import RequestProtocol
 
+T = TypeVar("T")
 Event: TypeAlias = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], Socket]
 
 MILLISECONDS: Final = 1
@@ -45,6 +48,7 @@ class Multi:
 		self._perform_cond = anyio.Condition()
 		self._governor_delegated = False
 		self._completed = dict[pycurl.Curl, int]()
+		self._requests = dict[RequestProtocol[object], pycurl.Curl]()
 
 	def _add_socket_evt(self, what: int, socket: int, *_: object) -> None:
 		# Callback registered with CURLMOPT_SOCKETFUNCTION, registers socket events the
@@ -126,7 +130,7 @@ class Multi:
 			yield from ((handle, pycurl.E_OK) for handle in complete)
 			yield from ((handle, res) for (handle, res, _) in failed)
 
-	async def _govern_transfer(self, handle: pycurl.Curl) -> int:
+	async def _govern_transfer(self, request: RequestProtocol[T], handle: pycurl.Curl) -> None:
 		# Await _single_event() repeatedly until the wanted handle is completed.
 		# Store all intermediate completed handles and notify interested tasks.
 		remaining = -1
@@ -140,45 +144,58 @@ class Multi:
 				# This check needs to be atomic with the notification
 				# (more specifically, the _governor_delegated flag needs to be unset
 				# atomically)
-				if (res := self._completed.pop(handle, None)) is not None:
+				if handle in self._completed or request.has_response():
 					self._governor_delegated = False
-					return res
+					return
+
 		# SHOULD NOT fall off the end of the loop, but don't want it to run infinitely if
 		# something goes wrong, so ensure it has a completion condition and raise
 		# RuntimeError if it does complete
 		raise RuntimeError("no response detected after all handles processed")
 
-	async def _await_notification(self, handle: pycurl.Curl) -> int|None:
-		# Await notifications of completed transfers from _govern_transfer().
-		# Return whether the wanted handle was completed.
-		async with self._perform_cond:
-			await self._perform_cond.wait()
-			return self._completed.pop(handle, None)
-
-	async def process(self, handle: pycurl.Curl) -> None:
-		"""
-		Perform a request as described by a Curl instance
-		"""
-		res: int|None = None
-		self._handler.add_handle(handle)
-		self._handles += 1
-		while res is None:
+	async def _process(self, request: RequestProtocol[T], handle: pycurl.Curl) -> T:
+		if request.has_response():
+			return request.response()
+		while handle not in self._completed:
 			# If no task is governing the transfer manager, self-delegate the role to
 			# ourselves and govern transfers until `handle` completes.
 			if not self._governor_delegated:
 				self._governor_delegated = True
 				try:
-					res = await self._govern_transfer(handle)
+					await self._govern_transfer(request, handle)
 				finally:
 					self._governor_delegated = False
-			# Otherwise await a notification of completed handles; break out if `handle` has
-			# completed and returned a response, otherwise repeat the loop.
+			# Otherwise await a notification of completed handles
 			else:
-				res = await self._await_notification(handle)
-		self._handler.remove_handle(handle)
-		self._handles -= 1
-		if res != pycurl.E_OK:
-			raise CurlError(res, handle.errstr())
+				async with self._perform_cond:
+					await self._perform_cond.wait()
+			if request.has_response():
+				return request.response()
+		match self._completed.pop(handle):  # noqa: R503
+			case pycurl.E_OK:
+				del self._requests[request]
+				return request.completed()
+			case err:
+				assert isinstance(err, int)  # nudge mypy
+				del self._requests[request]
+				raise CurlError(err, handle.errstr())
+
+	async def process(self, request: RequestProtocol[T]) -> T:
+		"""
+		Perform a request as described by a Curl instance
+		"""
+		try:
+			handle = self._requests[request]
+		except KeyError:
+			handle = self._requests[request] = pycurl.Curl()
+			request.configure_handle(handle)
+		self._handler.add_handle(handle)
+		self._handles += 1
+		try:
+			return (await self._process(request, handle))
+		finally:
+			self._handles -= 1
+			self._handler.remove_handle(handle)
 
 
 class _ExternalSocket(Socket):

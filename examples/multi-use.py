@@ -10,10 +10,10 @@ from pathlib import Path
 from typing import IO
 
 import anyio
-import pycurl
 
 from konnect.curl import CurlError
 from konnect.curl import Multi
+from konnect.curl import Request
 
 DEVNULL = Path("/dev/null")
 
@@ -28,22 +28,14 @@ async def get_url(multi: Multi, url: str, destination: IO[bytes]) -> None:
 
 	This works well with HTTP GET and *MAY* also work with other URL schemes.
 	"""
-	# Create and configure a Curl instance
-	c = pycurl.Curl()
-	c.setopt(pycurl.URL, url)
-	c.setopt(pycurl.VERBOSE, 1)
-	c.setopt(pycurl.WRITEDATA, destination)
-	c.setopt(pycurl.CONNECTTIMEOUT_MS, 500)
-	c.setopt(pycurl.TIMEOUT_MS, 3000)
-	# c.setopt(pycurl.FOLLOWLOCATION, 1)
-	# ...
+	req = Request(url, destination)
 
 	try:
-		await multi.process(c)
+		await multi.process(req)
 	except CurlError as exc:
-		print(f"FAILED with {exc}:", c.getinfo(pycurl.EFFECTIVE_URL))
+		print(f"FAILED with {exc}:", url)
 	else:
-		print("COMPLETED:", c.getinfo(pycurl.EFFECTIVE_URL))
+		print("COMPLETED:", url)
 
 
 async def _test() -> None:
