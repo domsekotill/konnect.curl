@@ -8,6 +8,8 @@ import enum
 
 import pycurl
 
+from .scalars import QuantityUnit
+
 
 class SocketEvt(enum.Flag):
 	"""
@@ -20,3 +22,15 @@ class SocketEvt(enum.Flag):
 	OUT = pycurl.POLL_OUT
 	INOUT = pycurl.POLL_INOUT
 	REMOVE = pycurl.POLL_REMOVE
+
+
+class Time(QuantityUnit):
+	"""
+	Units for time intervals
+	"""
+
+	# Base times on milliseconds as thats the greatest precision used by curl.
+	# This can be transparently changed at any time to a greater precision base.
+
+	MILLISECONDS = 1
+	SECONDS = 1000

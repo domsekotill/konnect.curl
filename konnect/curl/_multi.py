@@ -19,14 +19,16 @@ import pycurl
 from anyio.abc import ObjectStream as Channel
 
 from ._enums import SocketEvt
+from ._enums import Time
 from ._exceptions import CurlError
 from .abc import RequestProtocol
+from .scalars import Quantity
 
 T = TypeVar("T")
 Event: TypeAlias = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], Socket]
 
-MILLISECONDS: Final = 1
-SECONDS: Final = 1000
+MILLISECONDS: Final = Time.MILLISECONDS
+SECONDS: Final = Time.SECONDS
 
 
 class Multi:
@@ -43,7 +45,7 @@ class Multi:
 		self._handler.setopt(pycurl.M_SOCKETFUNCTION, self._add_socket_evt)
 		self._handler.setopt(pycurl.M_TIMERFUNCTION, self._add_timer_evt)
 		self._io_events = dict[int, tuple[Socket, SocketEvt]]()
-		self._deadline = -1
+		self._deadline: Quantity[Time]|None = None
 		self._handles = 0
 		self._perform_cond = anyio.Condition()
 		self._governor_delegated = False
@@ -67,8 +69,8 @@ class Multi:
 		# Callback registered with CURLMOPT_TIMERFUNCTION, registers when the transfer
 		# manager next wants to be activated if no prior events occur, in milliseconds.
 		self._deadline = \
-			-1 if delay < 0 else \
-			int(anyio.current_time()) * SECONDS + delay * MILLISECONDS
+			None if delay < 0 else \
+			int(anyio.current_time()) @ SECONDS + delay @ MILLISECONDS
 
 	async def _wait_readable(self, socket: Socket, channel: Channel[Event]) -> None:
 		await anyio.wait_socket_readable(socket)
@@ -78,8 +80,8 @@ class Multi:
 		await anyio.wait_socket_writable(socket)
 		await channel.send((SocketEvt.OUT, socket))
 
-	async def _wait_until(self, time: float, channel: Channel[None]) -> None:
-		await anyio.sleep_until(time)
+	async def _wait_until(self, time: Quantity[Time], channel: Channel[None]) -> None:
+		await anyio.sleep_until(time >> SECONDS)
 		await channel.send(None)
 
 	async def _single_event(self) -> int:
@@ -87,7 +89,7 @@ class Multi:
 		# of it, then return the number of active transfers
 
 		# Shortcut if no events are registered, or the only event is an immediate timeout
-		if not self._io_events and self._deadline <= 0:
+		if not self._io_events and self._deadline is None:
 			_, running = self._handler.socket_action(pycurl.SOCKET_TIMEOUT, 0)
 			return running
 
@@ -99,8 +101,8 @@ class Multi:
 					tasks.start_soon(self._wait_readable, socket, chan)
 				if SocketEvt.OUT in evt:
 					tasks.start_soon(self._wait_writable, socket, chan)
-			if self._deadline >= 0:
-				tasks.start_soon(self._wait_until, self._deadline/SECONDS, chan)
+			if self._deadline is not None:
+				tasks.start_soon(self._wait_until, self._deadline, chan)
 			resp = await chan.receive()
 			tasks.cancel_scope.cancel()
 
