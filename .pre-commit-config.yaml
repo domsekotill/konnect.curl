@@ -52,7 +52,7 @@ repos:
   - id: python-use-type-annotations
 
 - repo: https://github.com/hakancelikdev/unimport
-  rev: 0.16.0
+  rev: 1.0.0
   hooks:
   - id: unimport
     args: [--remove, --exclude=types.py|__init__.py]
@@ -67,7 +67,7 @@ repos:
     stages: [commit, manual]
 
 - repo: https://github.com/asottile/add-trailing-comma
-  rev: v2.4.0
+  rev: v3.0.1
   hooks:
   - id: add-trailing-comma
     args: [--py36-plus]
