@@ -25,7 +25,7 @@ Unit types for `Quantity` are created by subclassing the `QuantityUnit` `enum` b
 The enum members form units of relative size to each other. They MUST be integers so
 typically the smallest (highest precision) unit is `1` and the others are some multiple of
 it. Note that the designated 'unit' can be changed without breaking dependant code (as long
-as the code is using the quantities right):
+as the code is using the quantities right).  In this case the unitary value is 0.5mm:
 
 >>> class Distance(QuantityUnit):
 ...     MILLIMETERS = 2  # Scaled to allow SIXTEENTH_INCH to be an integer
@@ -34,7 +34,7 @@ as the code is using the quantities right):
 ...     KILOMETERS = 1000 * METERS
 ...     INCH = 24 * MILLIMETERS
 ...     # ...
-...     SIXTEENTH_INCH = INCH // 16  # 1/16″ is 0.5mm
+...     SIXTEENTH_INCH = INCH // 16  # 1/16″ is 1.5mm
 
 
 Creating Scalar Quantities
