@@ -70,7 +70,7 @@ class Multi:
 		# manager next wants to be activated if no prior events occur, in milliseconds.
 		self._deadline = \
 			None if delay < 0 else \
-			int(anyio.current_time()) @ SECONDS + delay @ MILLISECONDS
+			anyio.current_time() @ SECONDS + delay @ MILLISECONDS
 
 	async def _wait_readable(self, socket: Socket, channel: Channel[Event]) -> None:
 		await anyio.wait_socket_readable(socket)
