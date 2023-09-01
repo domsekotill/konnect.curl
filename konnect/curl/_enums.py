@@ -5,6 +5,7 @@ Enum classes for other modules
 """
 
 import enum
+from typing import Final
 
 import pycurl
 
@@ -34,3 +35,7 @@ class Time(QuantityUnit):
 
 	MILLISECONDS = 1
 	SECONDS = 1000
+
+
+MILLISECONDS: Final = Time.MILLISECONDS
+SECONDS: Final = Time.SECONDS

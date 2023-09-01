@@ -8,7 +8,6 @@ from socket import SO_PROTOCOL  # type: ignore[attr-defined]  # Probable typo in
 from socket import SO_TYPE
 from socket import SOL_SOCKET
 from socket import socket as Socket
-from typing import Final
 from typing import Literal
 from typing import Self
 from typing import TypeAlias
@@ -18,6 +17,8 @@ import anyio
 import pycurl
 from anyio.abc import ObjectStream as Channel
 
+from ._enums import MILLISECONDS
+from ._enums import SECONDS
 from ._enums import SocketEvt
 from ._enums import Time
 from ._exceptions import CurlError
@@ -26,9 +27,6 @@ from .scalars import Quantity
 
 T = TypeVar("T")
 Event: TypeAlias = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], Socket]
-
-MILLISECONDS: Final = Time.MILLISECONDS
-SECONDS: Final = Time.SECONDS
 
 
 class Multi:
