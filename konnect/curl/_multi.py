@@ -46,7 +46,6 @@ class Multi:
 		self._handler.setopt(pycurl.M_TIMERFUNCTION, self._add_timer_evt)
 		self._io_events = dict[int, tuple[Socket, SocketEvt]]()
 		self._deadline: Quantity[Time]|None = None
-		self._handles = 0
 		self._perform_cond = anyio.Condition()
 		self._governor_delegated = False
 		self._completed = dict[pycurl.Curl, int]()
@@ -117,6 +116,19 @@ class Multi:
 				_, running = self._handler.socket_action(socket.fileno(), pycurl.CSELECT_OUT)  # type: ignore[unreachable]
 		return running
 
+	def _get_handle(self, request: RequestProtocol[object]) -> pycurl.Curl:
+		try:
+			return self._requests[request]
+		except KeyError:
+			handle = self._requests[request] = pycurl.Curl()
+			request.configure_handle(handle)
+			self._handler.add_handle(handle)
+			return handle
+
+	def _del_handle(self, request: RequestProtocol[object]) -> None:
+		handle = self._requests.pop(request)
+		self._handler.remove_handle(handle)
+
 	def _yield_complete(self) -> Iterator[tuple[pycurl.Curl, int]]:
 		# Convert pycurl.CurlMulti.info_read() output into tuples of (handle, code) and
 		# iteratively yield them
@@ -128,7 +140,7 @@ class Multi:
 			# superfluous but if the bug is fixed 'max_objects' could be replaced with
 			# a static value to constrain memory usage and make it more predictable, and
 			# remove the need to track the number of active handles.
-			n_msgs, complete, failed = self._handler.info_read(self._handles)
+			n_msgs, complete, failed = self._handler.info_read(len(self._requests))
 			yield from ((handle, pycurl.E_OK) for handle in complete)
 			yield from ((handle, res) for (handle, res, _) in failed)
 
@@ -155,9 +167,13 @@ class Multi:
 		# RuntimeError if it does complete
 		raise RuntimeError("no response detected after all handles processed")
 
-	async def _process(self, request: RequestProtocol[T], handle: pycurl.Curl) -> T:
+	async def process(self, request: RequestProtocol[T]) -> T:
+		"""
+		Perform a request as described by a Curl instance
+		"""
 		if request.has_response():
 			return request.response()
+		handle = self._get_handle(request)
 		while handle not in self._completed:
 			# If no task is governing the transfer manager, self-delegate the role to
 			# ourselves and govern transfers until `handle` completes.
@@ -175,29 +191,12 @@ class Multi:
 				return request.response()
 		match self._completed.pop(handle):  # noqa: R503
 			case pycurl.E_OK:
-				del self._requests[request]
+				self._del_handle(request)
 				return request.completed()
 			case err:
 				assert isinstance(err, int)  # nudge mypy
-				del self._requests[request]
+				self._del_handle(request)
 				raise CurlError(err, handle.errstr())
-
-	async def process(self, request: RequestProtocol[T]) -> T:
-		"""
-		Perform a request as described by a Curl instance
-		"""
-		try:
-			handle = self._requests[request]
-		except KeyError:
-			handle = self._requests[request] = pycurl.Curl()
-			request.configure_handle(handle)
-		self._handler.add_handle(handle)
-		self._handles += 1
-		try:
-			return (await self._process(request, handle))
-		finally:
-			self._handles -= 1
-			self._handler.remove_handle(handle)
 
 
 class _ExternalSocket(Socket):
