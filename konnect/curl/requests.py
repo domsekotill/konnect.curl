@@ -14,6 +14,9 @@ class Request:
 	A simple implementation of `konnect.curl.abc.RequestProtocol`
 	"""
 
+	url: str
+	destination: IO[bytes]
+
 	def __init__(self, url: str, destination: IO[bytes]):
 		self.url = url
 		self.destination = destination

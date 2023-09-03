@@ -167,7 +167,9 @@ class QuantityUnit(enum.Enum):
 	Enum base class for units
 	"""
 
-	value: int
+	if TYPE_CHECKING:
+		@property
+		def value(self) -> int: ...  # noqa: ignore[D102]
 
 	def __rmatmul__(self, scalar: float|int) -> Quantity[Self]:
 		return Quantity(self.value * scalar)

@@ -89,8 +89,9 @@ repos:
   rev: v1.5.1
   hooks:
   - id: mypy
-    args: ["--python-version=3.11", "--follow-imports=silent", "konnect", "examples"]
+    args: ["--python-version=3.11", "--follow-imports=silent", "konnect", "examples", "scripts"]
     pass_filenames: false
     additional_dependencies:
     - anyio
     - types-pycurl
+    - types-toml
