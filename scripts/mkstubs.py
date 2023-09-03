@@ -201,8 +201,7 @@ class Package:
 		"""
 		copyfile(self.project.root / "LICENCE.txt", build_dir / "LICENCE.txt")
 
-	@staticmethod
-	def make_stubs(build_dir: Path, env: Environment) -> None:
+	def make_stubs(self, build_dir: Path, env: Environment) -> None:
 		"""
 		Generate type stub package
 		"""
@@ -211,9 +210,12 @@ class Package:
 			"mypy.stubgen",
 			"--verbose",
 			"--output", build_dir / "konnect-stubs",
-			"konnect/curl",
+			self.project.root / "konnect/curl",
 		)
-		copyfile("konnect/curl/_enums.py", build_dir / "konnect-stubs/curl/_enums.pyi")
+		copyfile(
+			self.project.root / "konnect/curl/_enums.py",
+			build_dir / "konnect-stubs/curl/_enums.pyi",
+		)
 
 	def build_package(self, build_dir: Path, env: Environment) -> None:
 		"""
