@@ -225,5 +225,5 @@ class _ExternalSocket(Socket):
 
 def _make_evt_channel() -> Channel[Event|None]:
 	return anyio.streams.stapled.StapledObjectStream[Event|None](
-		*anyio.create_memory_object_stream(1),
+		*anyio.create_memory_object_stream[Event|None](1),
 	)

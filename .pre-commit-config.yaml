@@ -92,6 +92,6 @@ repos:
     args: ["--python-version=3.11", "--follow-imports=silent", "konnect", "examples", "scripts"]
     pass_filenames: false
     additional_dependencies:
-    - anyio
+    - anyio ~=4.0
     - types-pycurl
     - types-toml
