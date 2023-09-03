@@ -29,6 +29,10 @@ POETRY_CONFIG = {
 	],
 	"authors": [],
 	"dependencies": {},
+	"include": [
+		"LICENCE.txt",
+	],
+	"license": "MPL-2.0",
 }
 
 STUB_PKG_CONFIG = {
@@ -186,9 +190,16 @@ class Package:
 		build_dir.mkdir(parents=True)
 		with build_dir.joinpath("pyproject.toml").open("w") as config:
 			toml.dump(self.complete_config(), config)
+		self.copy_docs(build_dir)
 		with Environment(build_dir / "stub.venv") as env:
 			self.make_stubs(build_dir, env)
 			self.build_package(build_dir, env)
+
+	def copy_docs(self, build_dir: Path) -> None:
+		"""
+		Copy minimal documentation for the types stubs package
+		"""
+		copyfile(self.project.root / "LICENCE.txt", build_dir / "LICENCE.txt")
 
 	@staticmethod
 	def make_stubs(build_dir: Path, env: Environment) -> None:

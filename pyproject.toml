@@ -10,6 +10,14 @@ email = "dom.sekotill@kodo.org.uk"
 name = "konnect.curl"
 version = "0.1.0"
 description = "Pythonic, asynchronous interface to Curl (cURL) using `anyio`"
+license = {file = "LICENCE.txt"}
+
+classifiers = [
+	"Development Status :: 4 - Beta",
+	"Intended Audience :: Developers",
+	"License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+	"Topic :: Internet",
+]
 
 requires-python = "~=3.11"
 dependencies = [
