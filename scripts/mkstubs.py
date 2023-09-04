@@ -213,6 +213,10 @@ class Package:
 			self.project.root / "konnect/curl",
 		)
 		copyfile(
+			self.project.root / "konnect/curl/__init__.py",
+			build_dir / "konnect-stubs/curl/__init__.pyi",
+		)
+		copyfile(
 			self.project.root / "konnect/curl/_enums.py",
 			build_dir / "konnect-stubs/curl/_enums.pyi",
 		)
