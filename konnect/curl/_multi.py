@@ -149,14 +149,15 @@ class Multi:
 		while remaining:
 			remaining = await self._single_event()
 			self._completed.update(self._yield_complete())
-			if not self._completed:
+			has_resp = request.has_response()
+			if not has_resp and not self._completed:
 				continue
 			async with self._perform_cond:
 				self._perform_cond.notify_all()
 				# This check needs to be atomic with the notification
 				# (more specifically, the _governor_delegated flag needs to be unset
 				# atomically)
-				if handle in self._completed or request.has_response():
+				if has_resp or handle in self._completed:
 					self._governor_delegated = False
 					return
 
