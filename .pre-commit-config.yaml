@@ -91,7 +91,15 @@ repos:
   - id: mypy
     args: ["--python-version=3.11", "--follow-imports=silent", "konnect", "examples", "scripts"]
     pass_filenames: false
-    additional_dependencies:
+    additional_dependencies: &type-deps
     - anyio ~=4.0
     - types-pycurl
     - types-toml
+
+- repo: https://github.com/RobertCraigie/pyright-python
+  rev: v1.1.373
+  hooks:
+  - id: pyright
+    args: ["--pythonversion=3.11"]
+    pass_filenames: false
+    additional_dependencies: *type-deps

@@ -52,6 +52,15 @@ warn_unused_configs = true
 warn_unreachable = true
 
 
+[tool.pyright]
+include = ["konnect"]
+typeCheckingMode = "strict"
+reportMissingModuleSource = "none"
+reportRedeclaration = "none"
+reportUnknownMemberType = "warning"
+reportUnusedImport = "warning"
+
+
 [tool.coverage.run]
 data_file = "results/coverage.db"
 branch = true

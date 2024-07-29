@@ -55,7 +55,7 @@ class Multi:
 	def _add_socket_evt(self, what: int, socket: int, *_: object) -> None:
 		# Callback registered with CURLMOPT_SOCKETFUNCTION, registers socket events the
 		# transfer manager wants to be activated in response to.
-		what = SocketEvt(what)
+		what: SocketEvt = SocketEvt(what)
 		if what == SocketEvt.REMOVE:
 			assert socket in self._io_events, f"file descriptor {socket} not in events"
 			del self._io_events[socket]
