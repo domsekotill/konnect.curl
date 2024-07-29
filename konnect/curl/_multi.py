@@ -1,8 +1,10 @@
-# Copyright 2023  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2024  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from collections.abc import Iterator
+from contextlib import asynccontextmanager
 from os import dup
 from socket import SO_PROTOCOL  # type: ignore[attr-defined]  # Probable typo in typeshed
 from socket import SO_TYPE
@@ -15,7 +17,8 @@ from typing import TypeVar
 
 import anyio
 import pycurl
-from anyio.abc import ObjectStream as Channel
+from anyio.abc import ObjectReceiveStream
+from anyio.abc import ObjectSendStream
 
 from ._enums import MILLISECONDS
 from ._enums import SECONDS
@@ -69,18 +72,6 @@ class Multi:
 			None if delay < 0 else \
 			anyio.current_time() @ SECONDS + delay @ MILLISECONDS
 
-	async def _wait_readable(self, socket: Socket, channel: Channel[Event]) -> None:
-		await anyio.wait_socket_readable(socket)
-		await channel.send((SocketEvt.IN, socket))
-
-	async def _wait_writable(self, socket: Socket, channel: Channel[Event]) -> None:
-		await anyio.wait_socket_writable(socket)
-		await channel.send((SocketEvt.OUT, socket))
-
-	async def _wait_until(self, time: Quantity[Time], channel: Channel[None]) -> None:
-		await anyio.sleep_until(time >> SECONDS)
-		await channel.send(None)
-
 	async def _single_event(self) -> int:
 		# Await a single event and call pycurl.CurlMulti.socket_action to inform the handler
 		# of it, then return the number of active transfers
@@ -92,15 +83,15 @@ class Multi:
 
 		# Start concurrent tasks awaiting each of the registered events, await a response
 		# from the first task to wake and send one.
-		async with anyio.create_task_group() as tasks, _make_evt_channel() as chan:
+		async with anyio.create_task_group() as tasks, _make_evt_channel() as (sendchan, recvchan):
 			for socket, evt in self._io_events.values():
 				if SocketEvt.IN in evt:
-					tasks.start_soon(self._wait_readable, socket, chan)
+					tasks.start_soon(_wait_readable, socket, sendchan)
 				if SocketEvt.OUT in evt:
-					tasks.start_soon(self._wait_writable, socket, chan)
+					tasks.start_soon(_wait_writable, socket, sendchan)
 			if self._deadline is not None:
-				tasks.start_soon(self._wait_until, self._deadline, chan)
-			resp = await chan.receive()
+				tasks.start_soon(_wait_until, self._deadline, sendchan)
+			resp = await recvchan.receive()
 			tasks.cancel_scope.cancel()
 
 		# Call pycurl.CurlMulti.socket_action() with details of the received event, and
@@ -224,7 +215,23 @@ class _ExternalSocket(Socket):
 		return cls(socket.family, stype, proto, fd)
 
 
-def _make_evt_channel() -> Channel[Event|None]:
-	return anyio.streams.stapled.StapledObjectStream[Event|None](
-		*anyio.create_memory_object_stream[Event|None](1),
-	)
+@asynccontextmanager
+async def _make_evt_channel() -> AsyncIterator[tuple[ObjectSendStream[Event|None], ObjectReceiveStream[Event|None]]]:
+	send, recv = anyio.create_memory_object_stream[Event|None](1)
+	async with send, recv:
+		yield send, recv
+
+
+async def _wait_readable(socket: Socket, channel: ObjectSendStream[Event]) -> None:
+	await anyio.wait_socket_readable(socket)
+	await channel.send((SocketEvt.IN, socket))
+
+
+async def _wait_writable(socket: Socket, channel: ObjectSendStream[Event]) -> None:
+	await anyio.wait_socket_writable(socket)
+	await channel.send((SocketEvt.OUT, socket))
+
+
+async def _wait_until(time: Quantity[Time], channel: ObjectSendStream[None]) -> None:
+	await anyio.sleep_until(time >> SECONDS)
+	await channel.send(None)
