@@ -35,9 +35,6 @@ ignore-init = true
 
 [tool.flakeheaven]
 base = "https://code.kodo.org.uk/dom/project-templates/-/raw/main/.flakerules.toml"
-colored = true
-max_line_length = 92
-max_doc_length = 92
 
 [tool.flakeheaven.exceptions."examples/"]
 flake8-print = ["-*"]
