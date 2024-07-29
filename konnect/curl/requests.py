@@ -1,4 +1,4 @@
-# Copyright 2023  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2024  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Provides `Request`, a simple implementation of `konnect.curl.abc.RequestProtocol`
@@ -23,7 +23,7 @@ class Request:
 
 	def configure_handle(self, handle: pycurl.Curl, /) -> None:
 		"""
-		Return a Curl handle for the request
+		Set options on a `pycurl.Curl` instance to be used for this request
 		"""
 		handle.setopt(pycurl.URL, self.url)
 		handle.setopt(pycurl.WRITEDATA, self.destination)
