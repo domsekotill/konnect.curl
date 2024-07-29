@@ -6,7 +6,7 @@ from collections.abc import AsyncIterator
 from collections.abc import Iterator
 from contextlib import asynccontextmanager
 from os import dup
-from socket import SO_PROTOCOL  # type: ignore[attr-defined]  # Probable typo in typeshed
+from socket import SO_PROTOCOL
 from socket import SO_TYPE
 from socket import SOL_SOCKET
 from socket import socket as Socket
