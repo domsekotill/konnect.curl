@@ -175,7 +175,7 @@ class QuantityUnit(enum.Enum):
 
 	if TYPE_CHECKING:
 		@property
-		def value(self) -> int: ...  # noqa: ignore[D102]
+		def value(self) -> int: ...  # noqa: D102
 
 	def __rmatmul__(self, scalar: float|int) -> Quantity[Self]:
 		return Quantity(self.value * scalar)
