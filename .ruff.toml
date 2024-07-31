@@ -57,15 +57,14 @@ select = [
 	# The bulk of bugbear's checks are useful
 	"B0",
 
-	# flake8-print
-	# ------------
+	# Various others
+	# --------------
 
-	 "T",
+	"UP", "BLE", "FBT", "A", "COM", "C4", "DTZ", "ISC", "LOG", "G", "PIE", "T",
+	"Q", "RSE", "RET", "SLF", "SLOT", "SIM", "TD",
 
-	# flake8-return
-	# -------------
-
-	"RET",
+	# Nice to have, needs fixing in several places though...
+	# "EM", "TCH", "PTH", "PGH",
 ]
 ignore = [
 	# pycodestyle
