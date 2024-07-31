@@ -1,4 +1,4 @@
-# Copyright 2023  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2024  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from socket import SO_PROTOCOL  # type: ignore[attr-defined]  # Probable typo in
 from socket import SO_TYPE
 from socket import SOL_SOCKET
 from socket import socket as Socket
+from typing import Final
 from typing import Literal
 from typing import Self
 from typing import TypeAlias
@@ -27,6 +28,8 @@ from .scalars import Quantity
 
 T = TypeVar("T")
 Event: TypeAlias = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], Socket]
+
+INFO_READ_SIZE: Final = 10
 
 
 class Multi:
@@ -132,13 +135,7 @@ class Multi:
 		# iteratively yield them
 		n_msgs = -1
 		while n_msgs:
-			# There is a bug in PyCurl affecting info_read; to work around it the
-			# 'max_objects' argument must be AT LEAST the number of waiting messages, which
-			# can be up to the total number of active handles. This makes the loop
-			# superfluous but if the bug is fixed 'max_objects' could be replaced with
-			# a static value to constrain memory usage and make it more predictable, and
-			# remove the need to track the number of active handles.
-			n_msgs, complete, failed = self._handler.info_read(len(self._requests))
+			n_msgs, complete, failed = self._handler.info_read(INFO_READ_SIZE)
 			yield from ((handle, pycurl.E_OK) for handle in complete)
 			yield from ((handle, res) for (handle, res, _) in failed)
 
