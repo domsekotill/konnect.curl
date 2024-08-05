@@ -1,4 +1,4 @@
-# Copyright 2023  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2024  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Abstract protocols which may be implemented by users
@@ -28,11 +28,13 @@ class RequestProtocol(Protocol[T_co]):
 		options.  The handle is guaranteed to be in a clean state with all options set to
 		their defaults.
 		"""
+		...
 
 	def has_response(self) -> bool:
 		"""
 		Return whether calling `response()` will return a value or raise `LookupError`
 		"""
+		...
 
 	def response(self) -> T_co:
 		"""
@@ -40,8 +42,10 @@ class RequestProtocol(Protocol[T_co]):
 
 		See `has_response()` for checking for waiting responses.
 		"""
+		...
 
 	def completed(self) -> T_co:
 		"""
 		Indicate that Curl has completed processing the handle and return a final response
 		"""
+		...

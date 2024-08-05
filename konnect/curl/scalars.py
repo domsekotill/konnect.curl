@@ -1,4 +1,4 @@
-# Copyright 2023  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2024  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Scalar quantities, which have a magnitude and a unit
@@ -112,6 +112,8 @@ unit.
 ... time              >>        Time.SECONDS
 """
 
+from __future__ import annotations
+
 import enum
 from typing import TYPE_CHECKING
 from typing import Generic
@@ -139,6 +141,7 @@ class Quantity(int, Generic[U]):
 			"""
 			Adding two quantities creates a new quantity
 			"""
+			...
 
 		@overload
 		def __sub__(self, other: Quantity[U]) -> Quantity[U]: ...
@@ -150,16 +153,19 @@ class Quantity(int, Generic[U]):
 			"""
 			Subtracting a quantity from another creates a new quantity
 			"""
+			...
 
 		def __mul__(self, other: int|float) -> Quantity[U]:
 			"""
 			Quantities can be multiplied by unitless values to produce a new quantity
 			"""
+			...
 
 		def __truediv__(self, other: int|float) -> Quantity[U]:
 			"""
 			Quantities can be divided by unitless values to produce a new quantity
 			"""
+			...
 
 
 class QuantityUnit(enum.Enum):
@@ -169,7 +175,7 @@ class QuantityUnit(enum.Enum):
 
 	if TYPE_CHECKING:
 		@property
-		def value(self) -> int: ...  # noqa: ignore[D102]
+		def value(self) -> int: ...  # noqa: D102
 
 	def __rmatmul__(self, scalar: float|int) -> Quantity[Self]:
 		return Quantity(self.value * scalar)
