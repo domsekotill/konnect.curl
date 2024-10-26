@@ -20,6 +20,7 @@ import anyio
 import pycurl
 from anyio.abc import ObjectReceiveStream
 from anyio.abc import ObjectSendStream
+from kodo.quantities import Quantity
 
 from ._enums import MILLISECONDS
 from ._enums import SECONDS
@@ -27,7 +28,6 @@ from ._enums import SocketEvt
 from ._enums import Time
 from ._exceptions import CurlError
 from .abc import RequestProtocol
-from .scalars import Quantity
 
 T = TypeVar("T")
 Event: TypeAlias = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], Socket]

@@ -98,6 +98,7 @@ repos:
     pass_filenames: false
     additional_dependencies: &type-deps
     - anyio ~=4.0
+    - kodo.quantities ~=0.1.1
     - types-pycurl
     - types-toml
 

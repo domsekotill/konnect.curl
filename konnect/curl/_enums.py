@@ -1,4 +1,4 @@
-# Copyright 2023  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2024  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Enum classes for other modules
@@ -8,8 +8,7 @@ import enum
 from typing import Final
 
 import pycurl
-
-from .scalars import QuantityUnit
+from kodo.quantities import QuantityUnit
 
 
 class SocketEvt(enum.Flag):
