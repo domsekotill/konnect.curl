@@ -137,7 +137,7 @@ class Multi:
 		while remaining:
 			remaining = await self._single_event()
 			self._completed.update(self._yield_complete())
-			has_resp = request.has_response()
+			has_resp = request.has_update()
 			if not has_resp and not self._completed:
 				continue
 			async with self._perform_cond:
@@ -158,8 +158,8 @@ class Multi:
 		"""
 		Perform a request as described by a Curl instance
 		"""
-		if request.has_response():
-			return request.response()
+		if request.has_update():
+			return request.get_update()
 		handle = self._get_handle(request)
 		while handle not in self._completed:
 			# If no task is governing the transfer manager, self-delegate the role to
@@ -174,8 +174,8 @@ class Multi:
 			else:
 				async with self._perform_cond:
 					await self._perform_cond.wait()
-			if request.has_response():
-				return request.response()
+			if request.has_update():
+				return request.get_update()
 		match self._completed.pop(handle):  # noqa: R503
 			case pycurl.E_OK:
 				self._del_handle(request)

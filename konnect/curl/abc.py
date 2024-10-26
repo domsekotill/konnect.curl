@@ -30,17 +30,17 @@ class RequestProtocol(Protocol[T_co]):
 		"""
 		...
 
-	def has_response(self) -> bool:
+	def has_update(self) -> bool:
 		"""
-		Return whether calling `response()` will return a value or raise `LookupError`
+		Return whether calling `get_update()` will return a value or raise `LookupError`
 		"""
 		...
 
-	def response(self) -> T_co:
+	def get_update(self) -> T_co:
 		"""
-		Return a waiting response or raise `LookupError` if there is none
+		Return a waiting update or raise `LookupError` if there is none
 
-		See `has_response()` for checking for waiting responses.
+		See `has_update()` for checking for waiting updates.
 		"""
 		...
 

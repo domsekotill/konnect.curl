@@ -30,17 +30,17 @@ class Request:
 		handle.setopt(pycurl.CONNECTTIMEOUT_MS, 500)
 		handle.setopt(pycurl.TIMEOUT_MS, 3000)
 
-	def has_response(self) -> bool:
+	def has_update(self) -> bool:
 		"""
-		Return whether calling `response()` will return a value or raise LookupError
+		Return whether calling `get_update()` will return a value or raise LookupError
 		"""
 		return False
 
-	def response(self) -> None:
+	def get_update(self) -> None:
 		"""
-		Return a waiting response or raise LookupError if there is none
+		Return a waiting update or raise LookupError if there is none
 
-		See `has_response()` for checking for waiting responses.
+		See `has_update()` for checking for waiting updates.
 		"""
 		raise LookupError
 
