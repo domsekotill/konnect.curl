@@ -29,7 +29,8 @@ from ._enums import Time
 from ._exceptions import CurlError
 from .abc import RequestProtocol
 
-T = TypeVar("T")
+U = TypeVar("U")
+R = TypeVar("R")
 Event: TypeAlias = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], Socket]
 
 INFO_READ_SIZE: Final = 10
@@ -53,7 +54,7 @@ class Multi:
 		self._perform_cond = anyio.Condition()
 		self._governor_delegated = False
 		self._completed = dict[pycurl.Curl, int]()
-		self._requests = dict[RequestProtocol[object], pycurl.Curl]()
+		self._requests = dict[RequestProtocol[object, object], pycurl.Curl]()
 
 	def _add_socket_evt(self, what: int, socket: int, *_: object) -> None:
 		# Callback registered with CURLMOPT_SOCKETFUNCTION, registers socket events the
@@ -108,7 +109,7 @@ class Multi:
 				_, running = self._handler.socket_action(socket.fileno(), pycurl.CSELECT_OUT)  # type: ignore[unreachable]
 		return running
 
-	def _get_handle(self, request: RequestProtocol[object]) -> pycurl.Curl:
+	def _get_handle(self, request: RequestProtocol[object, object]) -> pycurl.Curl:
 		try:
 			return self._requests[request]
 		except KeyError:
@@ -117,7 +118,7 @@ class Multi:
 			self._handler.add_handle(handle)
 			return handle
 
-	def _del_handle(self, request: RequestProtocol[object]) -> None:
+	def _del_handle(self, request: RequestProtocol[object, object]) -> None:
 		handle = self._requests.pop(request)
 		self._handler.remove_handle(handle)
 
@@ -130,7 +131,7 @@ class Multi:
 			yield from ((handle, pycurl.E_OK) for handle in complete)
 			yield from ((handle, res) for (handle, res, _) in failed)
 
-	async def _govern_transfer(self, request: RequestProtocol[T], handle: pycurl.Curl) -> None:
+	async def _govern_transfer(self, request: RequestProtocol[U, R], handle: pycurl.Curl) -> None:
 		# Await _single_event() repeatedly until the wanted handle is completed.
 		# Store all intermediate completed handles and notify interested tasks.
 		remaining = -1
@@ -154,7 +155,7 @@ class Multi:
 		# RuntimeError if it does complete
 		raise RuntimeError("no response detected after all handles processed")
 
-	async def process(self, request: RequestProtocol[T]) -> T:
+	async def process(self, request: RequestProtocol[U, R]) -> U | R:
 		"""
 		Perform a request as described by a Curl instance
 		"""

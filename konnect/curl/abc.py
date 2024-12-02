@@ -12,10 +12,11 @@ from typing import TypeVar
 
 from pycurl import Curl
 
-T_co = TypeVar("T_co", covariant=True)
+U_co = TypeVar("U_co", covariant=True)
+R_co = TypeVar("R_co", covariant=True)
 
 
-class RequestProtocol(Protocol[T_co]):
+class RequestProtocol(Protocol[U_co, R_co]):
 	"""
 	Request classes that are passed to `Multi.process()` must implement this protocol
 	"""
@@ -36,7 +37,7 @@ class RequestProtocol(Protocol[T_co]):
 		"""
 		...
 
-	def get_update(self) -> T_co:
+	def get_update(self) -> U_co:
 		"""
 		Return a waiting update or raise `LookupError` if there is none
 
@@ -44,7 +45,7 @@ class RequestProtocol(Protocol[T_co]):
 		"""
 		...
 
-	def completed(self) -> T_co:
+	def completed(self) -> R_co:
 		"""
 		Indicate that Curl has completed processing the handle and return a final response
 		"""
