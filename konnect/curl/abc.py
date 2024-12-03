@@ -96,13 +96,24 @@ class RequestProtocol(Protocol[U_co, R_co]):
 		"""
 		Return a waiting update or raise `LookupError` if there is none
 
-		See `has_update()` for checking for waiting updates.
+		`Multi.process()` will only call this method when `has_update()` indicates an update
+		is available.  The returned value will be returned by `Multi.process()`.
+
+		Note that values returned by this method are interim updates, and `Multi.process()`
+		will be called again with the current request.  It is up to the implementer how many
+		times updates will be returned and what objects to return as updates: it may be
+		different objects for different stages of a transfer; or there may never be interim
+		updates.
 		"""
 		...
 
 	def completed(self, handle: GetInfoHandle, /) -> R_co:
 		"""
 		Indicate that Curl has completed processing the handle and return a final response
+
+		Like `get_update` this method's return value will be returned by `Multi.process()`.
+		Unlike `get_update` this method will be called exactly once for a successful
+		transfer.
 
 		The `GetInfoHandle` passed as a positional argument may be used to get
 		post-completion information about a transfer, see
