@@ -10,10 +10,66 @@ or subclassed by users.
 from typing import Protocol
 from typing import TypeVar
 
-from pycurl import Curl
-
 U_co = TypeVar("U_co", covariant=True)
 R_co = TypeVar("R_co", covariant=True)
+
+
+# TODO(dom): Make concrete proxies and convert Pycurl exceptions to package exceptions
+# https://code.kodo.org.uk/konnect/konnect.curl/-/work_items/6
+
+
+class ConfigHandle(Protocol):
+	"""
+	The interface provided by objects passed to `RequestProtocol.configure_handle()`
+	"""
+
+	def setopt(self, option: int, value: object, /) -> None:
+		"""
+		Set an option on a Curl handle
+
+		See https://curl.se/libcurl/c/curl_easy_setopt.html for a list of options and what
+		they do.
+		"""
+		...
+
+	def unsetopt(self, option: int, /) -> None:
+		"""
+		Set options that have a default value back to that default
+		"""
+		...
+
+	def pause(self, state: int, /) -> None:
+		"""
+		Set the paused state of a Curl handle
+
+		This is provided for request implementations that need to await upload data, they
+		may store the handle or method for later use. In a future release it will be
+		deprecated in favour of a method that returns an asynchronously writable object.
+		"""
+		...
+
+
+class GetInfoHandle(Protocol):
+	"""
+	The interface provided by objects passed to `RequestProtocol.completed()`
+	"""
+
+	def getinfo(self, option: int, /) -> object:
+		"""
+		Return information about a Curl handle
+
+		Note that string values are returned as unicode strings.
+
+		See https://curl.se/libcurl/c/curl_easy_getinfo.html for a list of options and what
+		they return.
+		"""
+		...
+
+	def getinfo_raw(self, option: int, /) -> object:
+		"""
+		Like `getinfo()` but string values are returned as byte strings
+		"""
+		...
 
 
 class RequestProtocol(Protocol[U_co, R_co]):
@@ -21,13 +77,12 @@ class RequestProtocol(Protocol[U_co, R_co]):
 	Request classes that are passed to `Multi.process()` must implement this protocol
 	"""
 
-	def configure_handle(self, handle: Curl, /) -> None:
+	def configure_handle(self, handle: ConfigHandle, /) -> None:
 		"""
-		Configure a Curl handle for the request by calling its `Curl.setopt()` method
+		Configure a Curl handle for the request by calling `ConfigHandle` methods
 
-		Users may wish to re-implement or wrap this method to override `Curl.setopt()`
-		options.  The handle is guaranteed to be in a clean state with all options set to
-		their defaults.
+		See https://curl.se/libcurl/c/curl_easy_setopt.html for a list of options and what
+		they do.
 		"""
 		...
 
@@ -45,8 +100,13 @@ class RequestProtocol(Protocol[U_co, R_co]):
 		"""
 		...
 
-	def completed(self) -> R_co:
+	def completed(self, handle: GetInfoHandle, /) -> R_co:
 		"""
 		Indicate that Curl has completed processing the handle and return a final response
+
+		The `GetInfoHandle` passed as a positional argument may be used to get
+		post-completion information about a transfer, see
+		https://curl.se/libcurl/c/curl_easy_getinfo.html for a list of options and what they
+		return.
 		"""
 		...

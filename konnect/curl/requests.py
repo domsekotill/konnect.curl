@@ -8,6 +8,9 @@ from typing import IO
 
 import pycurl
 
+from .abc import ConfigHandle
+from .abc import GetInfoHandle
+
 
 class Request:
 	"""
@@ -21,7 +24,7 @@ class Request:
 		self.url = url
 		self.destination = destination
 
-	def configure_handle(self, handle: pycurl.Curl, /) -> None:
+	def configure_handle(self, handle: ConfigHandle, /) -> None:
 		"""
 		Set options on a `pycurl.Curl` instance to be used for this request
 		"""
@@ -44,7 +47,7 @@ class Request:
 		"""
 		raise LookupError
 
-	def completed(self) -> None:
+	def completed(self, handle: GetInfoHandle, /) -> None:
 		"""
 		Indicate that Curl has completed processing the handle and return a final response
 		"""

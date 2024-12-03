@@ -180,7 +180,7 @@ class Multi:
 		match self._completed.pop(handle):  # noqa: R503
 			case pycurl.E_OK:
 				self._del_handle(request)
-				return request.completed()
+				return request.completed(handle)
 			case err:
 				assert isinstance(err, int)  # nudge mypy
 				self._del_handle(request)
