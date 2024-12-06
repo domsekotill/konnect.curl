@@ -152,8 +152,8 @@ class Multi:
 
 		# SHOULD NOT fall off the end of the loop, but don't want it to run infinitely if
 		# something goes wrong, so ensure it has a completion condition and raise
-		# RuntimeError if it does complete
-		raise RuntimeError("no response detected after all handles processed")
+		# AssertionError if it does complete
+		raise AssertionError("no response detected after all handles processed")
 
 	async def process(self, request: RequestProtocol[U, R]) -> U | R:
 		"""
