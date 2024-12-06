@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2023  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2024  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Script for generating stub packages from konnect.curl source code
@@ -118,6 +118,12 @@ class Environment:
 		"""
 		run([self.python, "-m", module, *args], check=True)
 
+	def run(self, name: str, *args: str|Path) -> None:
+		"""
+		Execute a binary or script installed in the environment
+		"""
+		run([self.bin / name, *args], check=True)
+
 
 class Project:
 	"""
@@ -206,8 +212,8 @@ class Package:
 		Generate type stub package
 		"""
 		env.install("mypy")
-		env.exec_module(
-			"mypy.stubgen",
+		env.run(
+			"stubgen",
 			"--verbose",
 			"--output", build_dir / "konnect-stubs",
 			self.project.root / "konnect/curl",
