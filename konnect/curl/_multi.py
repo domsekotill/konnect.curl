@@ -102,6 +102,7 @@ class Multi:
 		# return how many active handles remain.
 		match resp:
 			case None:
+				self._deadline = None
 				_, running = self._handler.socket_action(pycurl.SOCKET_TIMEOUT, 0)
 			case SocketEvt.IN, Socket() as socket:
 				_, running = self._handler.socket_action(socket.fileno(), pycurl.CSELECT_IN)
