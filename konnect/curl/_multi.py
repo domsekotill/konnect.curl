@@ -1,18 +1,12 @@
-# Copyright 2023-2024  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2025  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from collections.abc import Iterator
 from contextlib import asynccontextmanager
-from os import dup
-from socket import SO_PROTOCOL
-from socket import SO_TYPE
-from socket import SOL_SOCKET
-from socket import socket as Socket
 from typing import Final
 from typing import Literal
-from typing import Self
 from typing import TypeAlias
 from typing import TypeVar
 
@@ -31,7 +25,7 @@ from .abc import RequestProtocol
 
 U = TypeVar("U")
 R = TypeVar("R")
-Event: TypeAlias = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], Socket]
+Event: TypeAlias = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], int]
 
 INFO_READ_SIZE: Final = 10
 
@@ -49,7 +43,7 @@ class Multi:
 		self._handler = pycurl.CurlMulti()
 		self._handler.setopt(pycurl.M_SOCKETFUNCTION, self._add_socket_evt)
 		self._handler.setopt(pycurl.M_TIMERFUNCTION, self._add_timer_evt)
-		self._io_events = dict[int, tuple[Socket, SocketEvt]]()
+		self._io_events = dict[int, SocketEvt]()
 		self._deadline: Quantity[Time]|None = None
 		self._perform_cond = anyio.Condition()
 		self._governor_delegated = False
@@ -64,10 +58,9 @@ class Multi:
 			assert socket in self._io_events, f"file descriptor {socket} not in events"
 			del self._io_events[socket]
 		elif socket in self._io_events:
-			socket_, __ = self._io_events[socket]
-			self._io_events[socket] = socket_, what
+			self._io_events[socket] = what
 		else:
-			self._io_events[socket] = _ExternalSocket.from_fd(socket), what
+			self._io_events[socket] = what
 
 	def _add_timer_evt(self, delay: int) -> None:
 		# Callback registered with CURLMOPT_TIMERFUNCTION, registers when the transfer
@@ -88,7 +81,7 @@ class Multi:
 		# Start concurrent tasks awaiting each of the registered events, await a response
 		# from the first task to wake and send one.
 		async with anyio.create_task_group() as tasks, _make_evt_channel() as (sendchan, recvchan):
-			for socket, evt in self._io_events.values():
+			for socket, evt in self._io_events.items():
 				if SocketEvt.IN in evt:
 					tasks.start_soon(_wait_readable, socket, sendchan)
 				if SocketEvt.OUT in evt:
@@ -104,10 +97,10 @@ class Multi:
 			case None:
 				self._deadline = None
 				_, running = self._handler.socket_action(pycurl.SOCKET_TIMEOUT, 0)
-			case SocketEvt.IN, Socket() as socket:
-				_, running = self._handler.socket_action(socket.fileno(), pycurl.CSELECT_IN)
-			case SocketEvt.OUT, Socket() as socket:
-				_, running = self._handler.socket_action(socket.fileno(), pycurl.CSELECT_OUT)  # type: ignore[unreachable]
+			case [SocketEvt.IN, int(fd)]:
+				_, running = self._handler.socket_action(fd, pycurl.CSELECT_IN)
+			case [SocketEvt.OUT, int(fd)]:
+				_, running = self._handler.socket_action(fd, pycurl.CSELECT_OUT)  # type: ignore[unreachable]
 		return running
 
 	def _get_handle(self, request: RequestProtocol[object, object]) -> pycurl.Curl:
@@ -188,32 +181,6 @@ class Multi:
 				raise CurlError(err, handle.errstr())
 
 
-class _ExternalSocket(Socket):
-	"""
-	A non-closing socket.socket subclass
-
-	When instances are garbage-collected they do not close the underlying file descriptor.
-	Used for sockets managed in a third-party library (libcurl in this case) which are
-	passed as file descriptors.  The file descriptor MUST match, so duplication is not
-	a possibility
-	"""
-
-	def __del__(self) -> None:
-		return
-
-	@classmethod
-	def from_fd(cls, fd: int, /) -> Self:
-		"""
-		Create an instance from the file descriptor of an open socket
-		"""
-		# Create a temporary socket instance to get socket type and protocol (no low level
-		# getsockopt()). FD must be duplicated as it will be closed when destroyed.
-		socket = Socket(fileno=dup(fd))
-		stype = socket.getsockopt(SOL_SOCKET, SO_TYPE)
-		proto = socket.getsockopt(SOL_SOCKET, SO_PROTOCOL)
-		return cls(socket.family, stype, proto, fd)
-
-
 @asynccontextmanager
 async def _make_evt_channel() -> AsyncIterator[tuple[ObjectSendStream[Event|None], ObjectReceiveStream[Event|None]]]:
 	send, recv = anyio.create_memory_object_stream[Event|None](1)
@@ -221,14 +188,14 @@ async def _make_evt_channel() -> AsyncIterator[tuple[ObjectSendStream[Event|None
 		yield send, recv
 
 
-async def _wait_readable(socket: Socket, channel: ObjectSendStream[Event]) -> None:
-	await anyio.wait_socket_readable(socket)
-	await channel.send((SocketEvt.IN, socket))
+async def _wait_readable(fd: int, channel: ObjectSendStream[Event]) -> None:
+	await anyio.wait_readable(fd)
+	await channel.send((SocketEvt.IN, fd))
 
 
-async def _wait_writable(socket: Socket, channel: ObjectSendStream[Event]) -> None:
-	await anyio.wait_socket_writable(socket)
-	await channel.send((SocketEvt.OUT, socket))
+async def _wait_writable(fd: int, channel: ObjectSendStream[Event]) -> None:
+	await anyio.wait_writable(fd)
+	await channel.send((SocketEvt.OUT, fd))
 
 
 async def _wait_until(time: Quantity[Time], channel: ObjectSendStream[None]) -> None:
