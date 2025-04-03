@@ -35,7 +35,7 @@ repos:
   - id: gitlint
 
 - repo: https://code.kodo.org.uk/dom/pre-commit-hooks
-  rev: v0.6.1
+  rev: v0.6.3
   hooks:
   - id: check-executable-modes
   - id: check-for-squash
@@ -55,8 +55,7 @@ repos:
   rev: 1.2.1
   hooks:
   - id: unimport
-    args: [--remove, --exclude=types.py|__init__.py]
-    additional_dependencies: [libcst >=0.4.0]
+    args: [--remove]
     stages: [commit, manual]
 
 - repo: https://github.com/pycqa/isort
@@ -86,12 +85,12 @@ repos:
     - pydocstyle[toml]
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.5.5
+  rev: v0.11.2
   hooks:
   - id: ruff
 
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.11.0
+  rev: v1.15.0
   hooks:
   - id: mypy
     args: ["--python-version=3.11", "--follow-imports=silent", "konnect", "examples", "scripts"]
@@ -103,7 +102,7 @@ repos:
     - types-toml
 
 - repo: https://github.com/RobertCraigie/pyright-python
-  rev: v1.1.373
+  rev: v1.1.398
   hooks:
   - id: pyright
     args: ["--pythonversion=3.11"]
