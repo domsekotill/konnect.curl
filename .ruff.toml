@@ -1,6 +1,10 @@
 line-length = 92
 indent-width = 1  # Used for line length violations
 
+[format]
+indent-style = "tab"
+skip-magic-trailing-comma = false
+
 [lint]
 select = [
 	# pyflakes
@@ -60,8 +64,8 @@ select = [
 	# Various others
 	# --------------
 
-	"UP", "BLE", "FBT", "A", "COM", "C4", "DTZ", "ISC", "LOG", "G", "PIE", "T",
-	"Q", "RSE", "RET", "SLF", "SLOT", "SIM", "TD",
+	"UP", "BLE", "FBT", "A", "C4", "DTZ", "ISC", "LOG", "G", "PIE", "T",
+	"Q", "RSE", "RET", "SLF", "SLOT", "SIM", "TD", "ANN",
 
 	# Nice to have, needs fixing in several places though...
 	# "EM", "TCH", "PTH", "PGH",
@@ -69,6 +73,12 @@ select = [
 ignore = [
 	# pycodestyle
 	# -----------
+
+	# DISABLE "Indentation contains mixed spaces and tabs"
+	# Will cause a syntax error if critical, otherwise in docstrings it is
+	# sometimes nice to use different indentation for "outer" (code) indentation
+	# and "inner" (documentation) indentation.
+	"E101",
 
 	# DISABLE "Continuation line missing indentation or outdented"
 	# "E122",
@@ -122,6 +132,10 @@ ignore = [
 	# Would be nice if could take into account use as a non-mutable type
 	"B006",
 
+	# DISABLE "Loop control variable `self` overrides iterable it iterates"
+	# Bit buggy, and type checker should catch it.
+	"B020",
+
 	# DISABLE "release is an empty method in an abstract base class, [...]"
 	# Until abstract methods are optional, empty optional "abstract" methods
 	# stay
@@ -141,6 +155,17 @@ ignore = [
 	# Mypy will report this, plugin also cannot do exhaustiveness check of match
 	# block, leading to false-positives.
 	"RET503",
+
+	# DISABLE "Boolean positional value in function call"
+	# Too many stdlib functions take a single positional-only boolean. ruff
+	# can't interpret function signatures to ignore these and doesn't understand
+	# types to allow-list methods.
+	"FBT003",
+
+	# DISABLE "Implicitly concatenated string literals over multiple lines"
+	# It sometimes looks better to do this than introduce unecessary
+	# parentheses.
+	"ISC002",
 ]
 
 [lint.per-file-ignores]
