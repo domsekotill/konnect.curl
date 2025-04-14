@@ -100,7 +100,7 @@ class Multi:
 			case [SocketEvt.IN, int(fd)]:
 				_, running = self._handler.socket_action(fd, pycurl.CSELECT_IN)
 			case [SocketEvt.OUT, int(fd)]:
-				_, running = self._handler.socket_action(fd, pycurl.CSELECT_OUT)  # type: ignore[unreachable]
+				_, running = self._handler.socket_action(fd, pycurl.CSELECT_OUT)
 		return running
 
 	def _get_handle(self, request: RequestProtocol[object, object]) -> pycurl.Curl:
