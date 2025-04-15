@@ -30,9 +30,6 @@ dependencies = [
 force_single_line = true
 line_length = 92
 
-[tool.unimport]
-ignore-init = true
-
 
 [tool.flakeheaven]
 base = "https://code.kodo.org.uk/dom/project-templates/-/raw/main/.flakerules.toml"
