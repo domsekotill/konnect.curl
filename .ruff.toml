@@ -66,6 +66,7 @@ select = [
 
 	"UP", "BLE", "FBT", "A", "C4", "DTZ", "ISC", "LOG", "G", "PIE", "T",
 	"Q", "RSE", "RET", "SLF", "SLOT", "SIM", "TD", "ANN",
+	"RUF",
 
 	# Nice to have, needs fixing in several places though...
 	# "EM", "TCH", "PTH", "PGH",
