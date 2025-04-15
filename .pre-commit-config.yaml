@@ -69,6 +69,7 @@ repos:
   rev: v0.11.2
   hooks:
   - id: ruff
+    args: ["--fix"]
   - id: ruff-format
     stages: [manual]
 
