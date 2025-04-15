@@ -39,15 +39,6 @@ base = "https://code.kodo.org.uk/dom/project-templates/-/raw/main/.flakerules.to
 flake8-print = ["-*"]
 
 
-[tool.mypy]
-strict = true
-namespace_packages = true
-explicit_package_bases = true
-allow_redefinition = true
-warn_unused_configs = true
-warn_unreachable = true
-
-
 [tool.pyright]
 include = ["konnect"]
 typeCheckingMode = "strict"
