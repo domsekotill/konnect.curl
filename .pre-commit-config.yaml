@@ -82,5 +82,7 @@ repos:
     additional_dependencies:
     - anyio ~=4.7
     - kodo.quantities ~=0.1.1
+    - pyasn1-modules
+    - types-pyasn1
     - types-pycurl
     - types-toml
