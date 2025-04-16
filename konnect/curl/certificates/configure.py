@@ -1,0 +1,334 @@
+# Copyright 2025  Dom Sekotill <dom.sekotill@kodo.org.uk>
+
+"""
+Curl handle configuration supporting various TLS backends
+"""
+
+from __future__ import annotations
+
+import re
+from contextlib import suppress
+from os import fspath
+from pathlib import Path
+from tempfile import mkdtemp
+from typing import TYPE_CHECKING
+from typing import TypeVar
+from typing import assert_never
+from typing import overload
+
+import pycurl
+
+from ..abc import ConfigHandle
+from .encodings import AsciiArmored
+from .encodings import Certificate
+from .encodings import EncodedFile
+from .encodings import EncodedT
+from .encodings import Pkcs12
+from .encodings import PrivateKey
+
+__all__ = [
+	"add_client_certificate",
+]
+
+if TYPE_CHECKING:
+	from typing import TypeAlias
+
+	ContainerT = TypeVar("ContainerT", AsciiArmored, Pkcs12)
+	RawT = TypeVar("RawT", Certificate, PrivateKey)
+
+	CommonEncodedSource: TypeAlias = (
+		AsciiArmored | Pkcs12 | EncodedFile[AsciiArmored] | EncodedFile[Pkcs12]
+	)
+	EncodedSource: TypeAlias = CommonEncodedSource | RawT | EncodedFile[RawT]
+
+	CertificateSource: TypeAlias = EncodedSource[Certificate]
+	PrivateKeySource: TypeAlias = EncodedSource[PrivateKey]
+
+_tempdir: Path | None = None
+
+
+@overload
+def add_client_certificate(
+	handle: ConfigHandle,
+	cert: CertificateSource,
+	key: PrivateKeySource,
+) -> None: ...
+
+
+@overload
+def add_client_certificate(
+	handle: ConfigHandle,
+	cert: CommonEncodedSource,
+	key: None = None,
+) -> None: ...
+
+
+def add_client_certificate(
+	handle: ConfigHandle,
+	cert: CertificateSource,
+	key: PrivateKeySource | None = None,
+) -> None:
+	"""
+	Configure a handle with a client certificate
+	"""
+	global _tempdir
+	if _tempdir is None:
+		_tempdir = Path(mkdtemp())
+
+	match pycurl.version_info()[5].lower().split("/"):
+		case ["openssl", str(version)]:
+			_configure_openssl_handle(handle, version, _tempdir, cert, key)
+		case ["gnutls", str(version)]:
+			_configure_gnutls_handle(handle, version, _tempdir, cert, key)
+		case ["mbedtls", _]:
+			_configure_mbedtls_handle(handle, _tempdir, cert, key)
+		case ["wolfssl", _]:
+			_configure_wolfssl_handle(handle, cert, key)
+		case ["schannel" | "secure transport", _]:
+			_configure_pkcs12_handle(handle, cert, key)
+		case _:
+			# TODO(dom): Get samples of other backends' version strings
+			# https://code.kodo.org.uk/konnect/konnect.curl/-/issues/10
+			raise NameError("unknown TLS backend")
+
+
+def _configure_openssl_handle(
+	handle: ConfigHandle,
+	version_str: str,
+	temp: Path,
+	cert: CertificateSource,
+	key: PrivateKeySource | None,
+) -> None:
+	# OpenSSL >= 0.9.3 supports PKCS#12; all formats as files or PEM and PKCS#12 as blobs
+	# Keys can be given as a separate blob with CURLOPT_SSLKEY_BLOB
+	version = _split_version(version_str)
+	match cert:
+		case Certificate():
+			handle.setopt(pycurl.SSLCERTTYPE, AsciiArmored.format)
+			handle.setopt(pycurl.SSLCERT_BLOB, AsciiArmored.new(certificate=cert))
+		case Pkcs12() if version < [0, 9, 3]:
+			cert = _container_blob(AsciiArmored, cert, None)
+			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
+			handle.setopt(pycurl.SSLCERT_BLOB, cert)
+		case AsciiArmored() | Pkcs12():
+			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
+			handle.setopt(pycurl.SSLCERT_BLOB, cert)
+		case EncodedFile():
+			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
+			handle.setopt(pycurl.SSLCERT, fspath(cert.path))
+		case _ as never:
+			assert_never(never)
+
+	match key:
+		case None:
+			return
+		case PrivateKey():
+			handle.setopt(pycurl.SSLKEYTYPE, AsciiArmored.format)
+			handle.setopt(pycurl.SSLKEY_BLOB, AsciiArmored.new(private_key=key))
+		case Pkcs12() if version < [0, 9, 3]:
+			cert = _container_blob(AsciiArmored, cert, key)
+			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
+			handle.setopt(pycurl.SSLCERT_BLOB, cert)
+		case AsciiArmored() | Pkcs12():
+			handle.setopt(pycurl.SSLKEYTYPE, key.format)
+			handle.setopt(pycurl.SSLKEY_BLOB, key)
+		case EncodedFile():
+			handle.setopt(pycurl.SSLKEYTYPE, key.format)
+			handle.setopt(pycurl.SSLKEY, fspath(key.path))
+		case _ as never:
+			assert_never(never)
+
+
+def _configure_gnutls_handle(
+	handle: ConfigHandle,
+	version_str: str,
+	temp: Path,
+	cert: CertificateSource,
+	key: PrivateKeySource | None,
+) -> None:
+	# From GnuTLS >= 8.11.0 PEM and P12 are allowed, just PEM before that.
+	# Only CURLOPT_SSLCERT works with GnuTLS
+	version = _split_version(version_str)
+
+	match cert:
+		case _ if key is not None:
+			cert = _container_file(AsciiArmored, temp, cert, key)
+		case AsciiArmored():
+			cert = _as_file(temp, cert)
+		case Pkcs12():
+			cert = _as_file(temp, cert)
+		case EncodedFile() if cert.encoding is Pkcs12 and version < [8, 11, 0]:
+			cert = _container_file(AsciiArmored, temp, cert, None)
+		case EncodedFile() if cert.encoding in (AsciiArmored, Pkcs12):
+			pass
+		case _:
+			cert = _container_file(AsciiArmored, temp, cert, None)
+
+	assert isinstance(cert, EncodedFile)
+	handle.setopt(pycurl.SSLCERTTYPE, cert.format)
+	handle.setopt(pycurl.SSLCERT, fspath(cert.path))
+
+
+def _configure_mbedtls_handle(
+	handle: ConfigHandle,
+	temp: Path,
+	cert: CertificateSource,
+	key: PrivateKeySource | None,
+) -> None:
+	# MbedTLS supports PEM and DER encodings with both CURLOPT_SSLCERT and
+	# CURLOPT_SSLCERT_BLOB, and only PEM (?) with CURLOPT_SSLKEY. CURLOPT_SSLKEY_BLOB does
+	# not appear to be supported.
+	match cert:
+		case Certificate() | AsciiArmored():
+			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
+			handle.setopt(pycurl.SSLCERT_BLOB, cert)
+		case EncodedFile() if cert.encoding is not Pkcs12:
+			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
+			handle.setopt(pycurl.SSLCERT, fspath(cert.path))
+		case _:
+			blob = _container_blob(AsciiArmored, cert, key)
+			handle.setopt(pycurl.SSLCERTTYPE, blob.format)
+			handle.setopt(pycurl.SSLCERT_BLOB, blob)
+			return
+
+	match key:
+		case None:
+			return
+		case EncodedFile() if key.encoding is AsciiArmored:
+			handle.setopt(pycurl.SSLKEY, fspath(key.path))
+			return
+		case EncodedFile():
+			key = key.read().private_key()
+		case _:
+			key = key.private_key()
+
+	file = _as_file(temp, AsciiArmored.new(private_key=key))
+	handle.setopt(pycurl.SSLKEY, fspath(file.path))
+
+
+def _configure_wolfssl_handle(
+	handle: ConfigHandle,
+	cert: CertificateSource,
+	key: PrivateKeySource | None,
+) -> None:
+	# WolfSSL is similar to mbedtls, but supports CURLOPT_SSLKEY_BLOB
+	match cert:
+		case Certificate() | AsciiArmored():
+			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
+			handle.setopt(pycurl.SSLCERT_BLOB, cert)
+		case EncodedFile() if cert.encoding is not Pkcs12:
+			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
+			handle.setopt(pycurl.SSLCERT, fspath(cert.path))
+		case _:
+			blob = _container_blob(AsciiArmored, cert, key)
+			handle.setopt(pycurl.SSLCERTTYPE, blob.format)
+			handle.setopt(pycurl.SSLCERT_BLOB, blob)
+			return
+
+	match key:
+		case None:
+			return
+		case PrivateKey() | AsciiArmored():
+			pass
+		case EncodedFile() if key.encoding is AsciiArmored:
+			handle.setopt(pycurl.SSLKEYTYPE, key.format)
+			handle.setopt(pycurl.SSLKEY, fspath(key.path))
+			return
+		case EncodedFile():
+			key = key.read().private_key()
+		case _:
+			key = key.private_key()
+
+	if key is None:
+		msg = f"no private key found in {key}"
+		raise ValueError(msg)
+
+	handle.setopt(pycurl.SSLKEYTYPE, key.format)
+	handle.setopt(pycurl.SSLKEY_BLOB, key)
+
+
+def _configure_pkcs12_handle(
+	handle: ConfigHandle,
+	cert: CertificateSource,
+	key: PrivateKeySource | None,
+) -> None:
+	# Both Schannel and Secure Transport supports only PKCS#12, for both file and blob types
+	match cert:
+		case EncodedFile() as file if file.encoding is Pkcs12 and key is None:
+			handle.setopt(pycurl.SSLCERTTYPE, file.format)
+			handle.setopt(pycurl.SSLCERT, fspath(file.path))
+			return
+		case Pkcs12() as blob if key is None:
+			handle.setopt(pycurl.SSLCERTTYPE, blob.format)
+			handle.setopt(pycurl.SSLCERT_BLOB, blob)
+			return
+		case _:
+			blob = _container_blob(Pkcs12, cert, key)
+			handle.setopt(pycurl.SSLCERTTYPE, blob.format)
+			handle.setopt(pycurl.SSLCERT_BLOB, blob)
+
+
+def _container_blob(
+	cls: type[ContainerT],
+	cert_source: CertificateSource,
+	key_source: PrivateKeySource | None,
+) -> ContainerT:
+	match cert_source:
+		case AsciiArmored() | Pkcs12():
+			cert = cert_source.certificate()
+			key = cert_source.private_key()
+		case EncodedFile():
+			cert_source = cert_source.read()
+			cert = cert_source.certificate()
+			key = cert_source.private_key()
+		case Certificate() as cert:
+			key = None
+		case _ as never:
+			assert_never(never)
+
+	match key_source:
+		case None:
+			pass
+		case AsciiArmored() | Pkcs12():
+			key = key_source.private_key()
+		case EncodedFile():
+			key = key_source.read().private_key()
+		case PrivateKey() as key:
+			pass
+		case _ as never:
+			assert_never(never)
+
+	if cert is None:
+		msg = f"no certificate found in {cert_source!r}"
+		raise ValueError(msg)
+	if key is None:
+		msg = f"no private key found in {key_source or cert_source!r}"
+		raise ValueError(msg)
+
+	return cls.new(certificate=cert, private_key=key)
+
+
+def _container_file(
+	cls: type[ContainerT],
+	directory: Path,
+	cert_source: CertificateSource,
+	key_source: PrivateKeySource | None,
+) -> EncodedFile[ContainerT]:
+	blob = _container_blob(cls, cert_source, key_source)
+	return _as_file(directory, blob)
+
+
+def _as_file(directory: Path, encoded_data: EncodedT) -> EncodedFile[EncodedT]:
+	cert = encoded_data.certificate()
+	assert cert is not None, "Generated {cls.__name__} blobs must contain a certificate"
+	certfile = EncodedFile(type(encoded_data), directory / cert.fingerprint())
+
+	# Assumes if the file exists this certificate has already been written to it
+	with suppress(FileExistsError):
+		certfile.write(encoded_data, exists_ok=False)
+
+	return certfile
+
+
+def _split_version(version: str) -> list[int]:
+	return [int(part) for part in re.findall(r"(?:^|(?<=[._-]))[0-9]+", version)]

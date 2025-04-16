@@ -180,7 +180,9 @@ class AsciiArmored(bytes):
 	@overload
 	def find_first(self, *types: type[PrivateKeyT]) -> PrivateKeyT: ...
 
-	def find_first(self, *types: type[Certificate]|type[PrivateKey]) -> Certificate|PrivateKey:
+	def find_first(
+		self, *types: type[Certificate] | type[PrivateKey]
+	) -> Certificate | PrivateKey:
 		"""
 		Return the first item with a label matching one of the provided types
 		"""
