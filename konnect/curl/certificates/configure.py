@@ -44,6 +44,12 @@ if TYPE_CHECKING:
 	CertificateSource: TypeAlias = EncodedSource[Certificate]
 	PrivateKeySource: TypeAlias = EncodedSource[PrivateKey]
 
+	__all__ = [
+		"CertificateSource",
+		"PrivateKeySource",
+		"add_client_certificate",
+	]
+
 _tempdir: Path | None = None
 
 
