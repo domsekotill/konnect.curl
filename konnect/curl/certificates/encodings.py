@@ -7,30 +7,25 @@ Classes for various DER encoded objects, with ASCII armoring and file storage fo
 from __future__ import annotations
 
 import hashlib
-from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import ClassVar
 from typing import Final
-from typing import Generic
 from typing import Never
+from typing import Protocol
 from typing import Self
 from typing import overload
 
 from .ascii_armor import ArmoredData
 
 if TYPE_CHECKING:
-	from typing import TypeAlias
 	from typing import TypeVar
 
-	AnyEncoding: TypeAlias = "Certificate | PrivateKey | Pkcs12 | AsciiArmored"
-	EncodedT = TypeVar("EncodedT", bound=AnyEncoding)
-	PrivateKeyT = TypeVar("PrivateKeyT", bound="PrivateKey")
+	PrivateKeyT = TypeVar("PrivateKeyT", bound=PrivateKey)
 
 __all__ = [
 	"AsciiArmored",
 	"Certificate",
 	"ECPrivateKey",
-	"EncodedFile",
 	"Pkcs8EncryptedPrivateKey",
 	"Pkcs8PrivateKey",
 	"Pkcs12",
@@ -41,6 +36,17 @@ __all__ = [
 DEFAULT_MAX_READ: Final = 2**16  # 64kiB
 
 
+class Encoding(Protocol):
+	format: ClassVar[str]
+
+	@classmethod
+	def from_bytes(cls, source: bytes, /) -> Self: ...
+	def to_bytes(self) -> bytes: ...
+
+	def certificate(self) -> Certificate | None: ...
+	def private_key(self) -> PrivateKey | None: ...
+
+
 class Certificate(bytes):
 	"""
 	X.509 certificates
@@ -48,6 +54,19 @@ class Certificate(bytes):
 
 	format: ClassVar = "DER"
 	label: ClassVar = "CERTIFICATE"
+
+	@classmethod
+	def from_bytes(cls, source: bytes, /) -> Self:
+		"""
+		Return a new instance from an in-memory bytes string
+		"""
+		return cls(source)
+
+	def to_bytes(self) -> Self:
+		"""
+		Return a bytes string representation of an instance (itself, as it subclasses bytes)
+		"""
+		return self
 
 	def fingerprint(self) -> str:
 		"""
@@ -87,6 +106,19 @@ class PrivateKey(bytes):
 	def __init_subclass__(cls, label: str) -> None:
 		cls.format = "DER"
 		cls.label = label
+
+	@classmethod
+	def from_bytes(cls, source: bytes, /) -> Self:
+		"""
+		Return a new instance from an in-memory bytes string
+		"""
+		return cls(source)
+
+	def to_bytes(self) -> Self:
+		"""
+		Return a bytes string representation of an instance (itself, as it subclasses bytes)
+		"""
+		return self
 
 	def certificate(self) -> None:
 		"""
@@ -153,6 +185,19 @@ class AsciiArmored(bytes):
 
 		return cls(b"".join(parts))
 
+	@classmethod
+	def from_bytes(cls, source: bytes, /) -> Self:
+		"""
+		Return a new instance from an in-memory bytes string
+		"""
+		return cls(source)
+
+	def to_bytes(self) -> Self:
+		"""
+		Return a bytes string representation of an instance (itself, as it subclasses bytes)
+		"""
+		return self
+
 	def certificate(self) -> Certificate | None:
 		"""
 		Return the first certificate found in the encoded data, or None
@@ -213,6 +258,19 @@ class Pkcs12(bytes):
 		"""
 		raise NotImplementedError
 
+	@classmethod
+	def from_bytes(cls, source: bytes, /) -> Self:
+		"""
+		Return a new instance from an in-memory bytes string
+		"""
+		return cls(source)
+
+	def to_bytes(self) -> Self:
+		"""
+		Return a bytes string representation of an instance (itself, as it subclasses bytes)
+		"""
+		return self
+
 	def certificate(self) -> Certificate | None:
 		"""
 		Return the first certificate found in the encoded data
@@ -224,45 +282,3 @@ class Pkcs12(bytes):
 		Return the first private key found in the encoded data
 		"""
 		raise NotImplementedError
-
-
-class EncodedFile(Generic["EncodedT"]):
-	"""
-	Combines a file path with encoding; and reading from and writing to that path
-	"""
-
-	def __init__(self, encoding: type[EncodedT], path: Path) -> None:
-		self.encoding = encoding
-		self.format = encoding.format
-		self.path = path
-
-	def read(self, maxsize: int = DEFAULT_MAX_READ) -> EncodedT:
-		"""
-		Read and return encoded data from the file path if it exists
-
-		The value of 'maxsize' is a safety net to prevent arbitrarily large files being read
-		into memory.  The default should be suitable for most certificate and key files but
-		can be overridden to allow unusually large files to be read (probably ASCII armored
-		files containing many items).
-
-		Can raise the normal range of `OSError` exceptions that may occur when opening and
-		reading a file.
-		"""
-		with self.path.open("rb") as handle:
-			return self.encoding(handle.read(maxsize))
-
-	def write(self, encoded_data: EncodedT, /, *, exists_ok: bool = False) -> None:
-		"""
-		Write encoded data to the file path
-
-		If 'exists_ok' is false the file will be opened in create-only mode, raising
-		`FileExistsError` if there is already a file at the path; otherwise the file is
-		opened in normal write mode and truncated before writing the encoded data.  Either
-		way the data is never appended to the file.
-
-		Can raise the normal range of `OSError` exceptions that may occur when opening and
-		writing to a file.
-		"""
-		mode = "wb" if exists_ok else "xb"
-		with self.path.open(mode) as handle:
-			handle.write(encoded_data)

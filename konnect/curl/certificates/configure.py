@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import hashlib
 import re
-from contextlib import suppress
 from os import fspath
 from pathlib import Path
 from tempfile import mkdtemp
@@ -22,10 +21,10 @@ import pycurl
 from ..abc import ConfigHandle
 from .encodings import AsciiArmored
 from .encodings import Certificate
-from .encodings import EncodedFile
-from .encodings import EncodedT
+from .encodings import Encoding
 from .encodings import Pkcs12
 from .encodings import PrivateKey
+from .files import EncodedFile
 
 __all__ = [
 	"add_client_certificate",
@@ -35,6 +34,7 @@ if TYPE_CHECKING:
 	from typing import TypeAlias
 
 	ContainerT = TypeVar("ContainerT", AsciiArmored, Pkcs12)
+	EncodedT = TypeVar("EncodedT", bound=Encoding)
 	RawT = TypeVar("RawT", Certificate, PrivateKey)
 
 	CommonEncodedSource: TypeAlias = (
@@ -126,7 +126,7 @@ def _configure_openssl_handle(
 			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
 			handle.setopt(pycurl.SSLCERT_BLOB, cert)
 		case EncodedFile():
-			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
+			handle.setopt(pycurl.SSLCERTTYPE, cert.contents.format)
 			handle.setopt(pycurl.SSLCERT, fspath(cert.path))
 		case _ as never:
 			assert_never(never)
@@ -145,7 +145,7 @@ def _configure_openssl_handle(
 			handle.setopt(pycurl.SSLKEYTYPE, key.format)
 			handle.setopt(pycurl.SSLKEY_BLOB, key)
 		case EncodedFile():
-			handle.setopt(pycurl.SSLKEYTYPE, key.format)
+			handle.setopt(pycurl.SSLKEYTYPE, key.contents.format)
 			handle.setopt(pycurl.SSLKEY, fspath(key.path))
 		case _ as never:
 			assert_never(never)
@@ -168,15 +168,15 @@ def _configure_gnutls_handle(
 			cert = _as_file(cert)
 		case Pkcs12():
 			cert = _as_file(cert)
-		case EncodedFile() if cert.encoding is Pkcs12 and version < [8, 11, 0]:
+		case EncodedFile() if isinstance(cert.contents, Pkcs12) and version < [8, 11, 0]:
 			cert = _container_file(AsciiArmored, cert, None)
-		case EncodedFile() if cert.encoding in (AsciiArmored, Pkcs12):
+		case EncodedFile() if isinstance(cert.contents, AsciiArmored | Pkcs12):
 			pass
 		case _:
 			cert = _container_file(AsciiArmored, cert, None)
 
 	assert isinstance(cert, EncodedFile)
-	handle.setopt(pycurl.SSLCERTTYPE, cert.format)
+	handle.setopt(pycurl.SSLCERTTYPE, cert.contents.format)
 	handle.setopt(pycurl.SSLCERT, fspath(cert.path))
 
 
@@ -192,8 +192,8 @@ def _configure_mbedtls_handle(
 		case Certificate() | AsciiArmored():
 			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
 			handle.setopt(pycurl.SSLCERT_BLOB, cert)
-		case EncodedFile() if cert.encoding is not Pkcs12:
-			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
+		case EncodedFile() if not isinstance(cert.contents, Pkcs12):
+			handle.setopt(pycurl.SSLCERTTYPE, cert.contents.format)
 			handle.setopt(pycurl.SSLCERT, fspath(cert.path))
 		case _:
 			blob = _container_blob(AsciiArmored, cert, key)
@@ -204,11 +204,11 @@ def _configure_mbedtls_handle(
 	match key:
 		case None:
 			return
-		case EncodedFile() if key.encoding is AsciiArmored:
+		case EncodedFile() if isinstance(key.contents, AsciiArmored):
 			handle.setopt(pycurl.SSLKEY, fspath(key.path))
 			return
 		case EncodedFile():
-			key = key.read().private_key()
+			key = key.contents.private_key()
 		case _:
 			key = key.private_key()
 
@@ -226,8 +226,8 @@ def _configure_wolfssl_handle(
 		case Certificate() | AsciiArmored():
 			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
 			handle.setopt(pycurl.SSLCERT_BLOB, cert)
-		case EncodedFile() if cert.encoding is not Pkcs12:
-			handle.setopt(pycurl.SSLCERTTYPE, cert.format)
+		case EncodedFile() if not isinstance(cert.contents, Pkcs12):
+			handle.setopt(pycurl.SSLCERTTYPE, cert.contents.format)
 			handle.setopt(pycurl.SSLCERT, fspath(cert.path))
 		case _:
 			blob = _container_blob(AsciiArmored, cert, key)
@@ -240,12 +240,12 @@ def _configure_wolfssl_handle(
 			return
 		case PrivateKey() | AsciiArmored():
 			pass
-		case EncodedFile() if key.encoding is AsciiArmored:
-			handle.setopt(pycurl.SSLKEYTYPE, key.format)
+		case EncodedFile() if isinstance(key.contents, AsciiArmored):
+			handle.setopt(pycurl.SSLKEYTYPE, key.contents.format)
 			handle.setopt(pycurl.SSLKEY, fspath(key.path))
 			return
 		case EncodedFile():
-			key = key.read().private_key()
+			key = key.contents.private_key()
 		case _:
 			key = key.private_key()
 
@@ -264,8 +264,8 @@ def _configure_pkcs12_handle(
 ) -> None:
 	# Both Schannel and Secure Transport supports only PKCS#12, for both file and blob types
 	match cert:
-		case EncodedFile() as file if file.encoding is Pkcs12 and key is None:
-			handle.setopt(pycurl.SSLCERTTYPE, file.format)
+		case EncodedFile() as file if isinstance(file.contents, Pkcs12) and key is None:
+			handle.setopt(pycurl.SSLCERTTYPE, file.contents.format)
 			handle.setopt(pycurl.SSLCERT, fspath(file.path))
 			return
 		case Pkcs12() as blob if key is None:
@@ -288,9 +288,8 @@ def _container_blob(
 			cert = cert_source.certificate()
 			key = cert_source.private_key()
 		case EncodedFile():
-			cert_source = cert_source.read()
-			cert = cert_source.certificate()
-			key = cert_source.private_key()
+			cert = cert_source.contents.certificate()
+			key = cert_source.contents.private_key()
 		case Certificate() as cert:
 			key = None
 		case _ as never:
@@ -302,7 +301,7 @@ def _container_blob(
 		case AsciiArmored() | Pkcs12():
 			key = key_source.private_key()
 		case EncodedFile():
-			key = key_source.read().private_key()
+			key = key_source.contents.private_key()
 		case PrivateKey() as key:
 			pass
 		case _ as never:
@@ -334,13 +333,12 @@ def _as_file(encoded_data: EncodedT) -> EncodedFile[EncodedT]:
 	if key := encoded_data.private_key():
 		sha1.update(key)
 	path = temp_dir() / sha1.hexdigest()
-	certfile = EncodedFile(type(encoded_data), path)
 
-	# Assumes if the file exists this certificate has already been written to it
-	with suppress(FileExistsError):
-		certfile.write(encoded_data, exists_ok=False)
-
-	return certfile
+	try:
+		return EncodedFile.write(path, encoded_data)
+	except FileExistsError:
+		# Assumes if the file exists this data has already been written to it
+		return EncodedFile(encoded_data, path)
 
 
 def _split_version(version: str) -> list[int]:

@@ -22,12 +22,12 @@ from .configure import add_client_certificate
 from .encodings import AsciiArmored
 from .encodings import Certificate
 from .encodings import ECPrivateKey
-from .encodings import EncodedFile
 from .encodings import Pkcs8EncryptedPrivateKey
 from .encodings import Pkcs8PrivateKey
 from .encodings import Pkcs12
 from .encodings import PrivateKey
 from .encodings import RSAPrivateKey
+from .files import EncodedFile
 
 __all__ = [
 	"AsciiArmored",

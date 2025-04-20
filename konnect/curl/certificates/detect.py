@@ -5,7 +5,6 @@ Functions for detecting encodings of files or in-memory byte strings
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING
 from typing import Final
 
 from pyasn1.codec.der import decoder
@@ -19,14 +18,12 @@ from pyasn1_modules import rfc8017  # type: ignore
 from .encodings import AsciiArmored
 from .encodings import Certificate
 from .encodings import ECPrivateKey
-from .encodings import EncodedFile
 from .encodings import Pkcs8EncryptedPrivateKey
 from .encodings import Pkcs8PrivateKey
 from .encodings import Pkcs12
+from .encodings import PrivateKey
 from .encodings import RSAPrivateKey
-
-if TYPE_CHECKING:
-	from .encodings import AnyEncoding
+from .files import EncodedFile
 
 __all__ = [
 	"identify_blob",
@@ -36,15 +33,30 @@ __all__ = [
 MAX_READ_SIZE: Final = 2**14  # 16kiB
 
 
-def identify_file(path: Path) -> EncodedFile[AnyEncoding]:
+def identify_file(
+	path: Path,
+) -> (
+	EncodedFile[AsciiArmored]
+	| EncodedFile[Certificate]
+	| EncodedFile[Pkcs12]
+	| EncodedFile[PrivateKey]
+):
 	"""
 	Return the encoding of a file in the form of an `EncodedFile` instance
 	"""
 	with path.open("br") as file:
-		return EncodedFile(identify_blob(file.read(MAX_READ_SIZE)), path)
+		match identify_blob(file.read(MAX_READ_SIZE)):
+			case AsciiArmored() as contents:
+				return EncodedFile(contents, path)
+			case Certificate() as contents:
+				return EncodedFile(contents, path)
+			case Pkcs12() as contents:
+				return EncodedFile(contents, path)
+			case PrivateKey() as contents:
+				return EncodedFile(contents, path)
 
 
-def identify_blob(blob: bytes) -> type[AnyEncoding]:
+def identify_blob(blob: bytes) -> AsciiArmored | Certificate | Pkcs12 | PrivateKey:
 	"""
 	Identify the encoding of a blob of octets and return the encoding class
 
@@ -67,12 +79,11 @@ def identify_blob(blob: bytes) -> type[AnyEncoding]:
 	except UnicodeError:
 		pass
 	else:
-		return AsciiArmored
+		return AsciiArmored(blob)
 	for spec, encoding in specs:
 		try:
 			decoder.decode(blob, asn1Spec=spec())
 		except PyAsn1Error:
 			continue
-		else:
-			return encoding
+		return encoding.from_bytes(blob)
 	raise ValueError(f"unable to identify encoding")
