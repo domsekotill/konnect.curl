@@ -74,12 +74,10 @@ repos:
     stages: [manual]
 
 - repo: https://github.com/RobertCraigie/pyright-python
-  rev: v1.1.398
+  rev: v1.1.399
   hooks:
   - id: pyright
-    args: ["--pythonversion=3.11"]
-    pass_filenames: false
-    additional_dependencies:
+    additional_dependencies: &deps
     - anyio ~=4.7
     - kodo.quantities ~=0.1.1
     - pyasn1-modules
@@ -87,3 +85,7 @@ repos:
     - types-pyasn1
     - types-pycurl
     - types-toml
+  - id: pyright
+    additional_dependencies: *deps
+    stages: ["push", "manual"]
+    pass_filenames: false
