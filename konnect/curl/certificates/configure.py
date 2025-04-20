@@ -19,6 +19,7 @@ from typing import overload
 import pycurl
 
 from ..abc import ConfigHandle
+from .detect import identify_certificate_file
 from .encodings import AsciiArmored
 from .encodings import Certificate
 from .encodings import Encoding
@@ -62,6 +63,52 @@ def temp_dir() -> Path:
 	if _tempdir is None:
 		_tempdir = Path(mkdtemp())
 	return _tempdir
+
+
+def add_ca_certificate(  # noqa: C901
+	handle: ConfigHandle,
+	cert_source: CertificateSource | Path,
+) -> None:
+	"""
+	Configure a handle with Certificate Authority certificates
+	"""
+	if isinstance(cert_source, Path):
+		if cert_source.is_dir():
+			handle.setopt(pycurl.CAPATH, fspath(cert_source))
+			return
+		cert_source = identify_certificate_file(cert_source)
+
+	match pycurl.version_info()[5].lower().split("/"):
+		case ["gnutls", _]:
+			use_blob = False
+		case _:
+			use_blob = True
+
+	match cert_source:
+		case EncodedFile() if isinstance(cert_source.contents, AsciiArmored):
+			handle.setopt(pycurl.CAINFO, fspath(cert_source.path))
+		case EncodedFile() if use_blob:
+			if not (cert := cert_source.contents.certificate()):
+				msg = f"no certificate found in {cert_source!r}"
+				raise ValueError(msg)
+			handle.setopt(pycurl.CAINFO_BLOB, AsciiArmored.new(cert))
+		case EncodedFile():
+			if not (cert := cert_source.contents.certificate()):
+				msg = f"no certificate found in {cert_source!r}"
+				raise ValueError(msg)
+			cert_source = _container_file(AsciiArmored, cert, None)
+			handle.setopt(pycurl.CAINFO, fspath(cert_source.path))
+		case AsciiArmored() if use_blob:
+			handle.setopt(pycurl.CAINFO_BLOB, cert_source.to_bytes())
+		case AsciiArmored():
+			cert_source = _as_file(cert_source)
+			handle.setopt(pycurl.CAINFO, fspath(cert_source.path))
+		case _:
+			if not (cert := cert_source.certificate()):
+				msg = f"no certificate found in {cert_source!r}"
+				raise ValueError(msg)
+			cert_source = _container_file(AsciiArmored, cert, None)
+			handle.setopt(pycurl.CAINFO, fspath(cert_source.path))
 
 
 @overload

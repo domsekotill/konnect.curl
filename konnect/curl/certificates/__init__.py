@@ -18,6 +18,7 @@ The backends currently supported are:
 
 from typing import TYPE_CHECKING
 
+from .configure import add_ca_certificate
 from .configure import add_client_certificate
 from .encodings import AsciiArmored
 from .encodings import Certificate
@@ -39,6 +40,7 @@ __all__ = [
 	"Pkcs12",
 	"PrivateKey",
 	"RSAPrivateKey",
+	"add_ca_certificate",
 	"add_client_certificate",
 ]
 
@@ -58,5 +60,6 @@ if TYPE_CHECKING:
 		"PrivateKey",
 		"PrivateKeySource",
 		"RSAPrivateKey",
+		"add_ca_certificate",
 		"add_client_certificate",
 	]

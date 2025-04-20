@@ -16,6 +16,8 @@ dependencies = [
 	"anyio ~=4.7",
 	"kodo.quantities ~=0.1.1",
 	"pycurl >=7.45.3, <8",
+	"pyasn1",
+	"pyasn1-modules",
 ]
 
 [[project.authors]]

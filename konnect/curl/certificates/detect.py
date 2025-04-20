@@ -27,6 +27,7 @@ from .files import EncodedFile
 
 __all__ = [
 	"identify_blob",
+	"identify_certificate_file",
 	"identify_file",
 ]
 
@@ -54,6 +55,25 @@ def identify_file(
 				return EncodedFile(contents, path)
 			case PrivateKey() as contents:
 				return EncodedFile(contents, path)
+
+
+def identify_certificate_file(
+	path: Path,
+) -> EncodedFile[AsciiArmored] | EncodedFile[Certificate] | EncodedFile[Pkcs12]:
+	"""
+	Return the encoding of a certificate file in the form of an `EncodedFile` instance
+	"""
+	with path.open("br") as file:
+		match identify_blob(file.read(MAX_READ_SIZE)):
+			case AsciiArmored() as contents:
+				return EncodedFile(contents, path)
+			case Certificate() as contents:
+				return EncodedFile(contents, path)
+			case Pkcs12() as contents:
+				return EncodedFile(contents, path)
+			case encoding:
+				msg = f"file of type {encoding}, expected a certificate encoding: {path}"
+				raise TypeError(msg)
 
 
 def identify_blob(blob: bytes) -> AsciiArmored | Certificate | Pkcs12 | PrivateKey:
