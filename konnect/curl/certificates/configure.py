@@ -6,6 +6,7 @@ Curl handle configuration supporting various TLS backends
 
 from __future__ import annotations
 
+import hashlib
 import re
 from contextlib import suppress
 from os import fspath
@@ -53,6 +54,16 @@ if TYPE_CHECKING:
 _tempdir: Path | None = None
 
 
+def temp_dir() -> Path:
+	"""
+	Idempotently create and return a temporary directory
+	"""
+	global _tempdir
+	if _tempdir is None:
+		_tempdir = Path(mkdtemp())
+	return _tempdir
+
+
 @overload
 def add_client_certificate(
 	handle: ConfigHandle,
@@ -77,17 +88,13 @@ def add_client_certificate(
 	"""
 	Configure a handle with a client certificate
 	"""
-	global _tempdir
-	if _tempdir is None:
-		_tempdir = Path(mkdtemp())
-
 	match pycurl.version_info()[5].lower().split("/"):
 		case ["openssl", str(version)]:
-			_configure_openssl_handle(handle, version, _tempdir, cert, key)
+			_configure_openssl_handle(handle, version, cert, key)
 		case ["gnutls", str(version)]:
-			_configure_gnutls_handle(handle, version, _tempdir, cert, key)
+			_configure_gnutls_handle(handle, version, cert, key)
 		case ["mbedtls", _]:
-			_configure_mbedtls_handle(handle, _tempdir, cert, key)
+			_configure_mbedtls_handle(handle, cert, key)
 		case ["wolfssl", _]:
 			_configure_wolfssl_handle(handle, cert, key)
 		case ["schannel" | "secure transport", _]:
@@ -101,7 +108,6 @@ def add_client_certificate(
 def _configure_openssl_handle(
 	handle: ConfigHandle,
 	version_str: str,
-	temp: Path,
 	cert: CertificateSource,
 	key: PrivateKeySource | None,
 ) -> None:
@@ -148,7 +154,6 @@ def _configure_openssl_handle(
 def _configure_gnutls_handle(
 	handle: ConfigHandle,
 	version_str: str,
-	temp: Path,
 	cert: CertificateSource,
 	key: PrivateKeySource | None,
 ) -> None:
@@ -158,17 +163,17 @@ def _configure_gnutls_handle(
 
 	match cert:
 		case _ if key is not None:
-			cert = _container_file(AsciiArmored, temp, cert, key)
+			cert = _container_file(AsciiArmored, cert, key)
 		case AsciiArmored():
-			cert = _as_file(temp, cert)
+			cert = _as_file(cert)
 		case Pkcs12():
-			cert = _as_file(temp, cert)
+			cert = _as_file(cert)
 		case EncodedFile() if cert.encoding is Pkcs12 and version < [8, 11, 0]:
-			cert = _container_file(AsciiArmored, temp, cert, None)
+			cert = _container_file(AsciiArmored, cert, None)
 		case EncodedFile() if cert.encoding in (AsciiArmored, Pkcs12):
 			pass
 		case _:
-			cert = _container_file(AsciiArmored, temp, cert, None)
+			cert = _container_file(AsciiArmored, cert, None)
 
 	assert isinstance(cert, EncodedFile)
 	handle.setopt(pycurl.SSLCERTTYPE, cert.format)
@@ -177,7 +182,6 @@ def _configure_gnutls_handle(
 
 def _configure_mbedtls_handle(
 	handle: ConfigHandle,
-	temp: Path,
 	cert: CertificateSource,
 	key: PrivateKeySource | None,
 ) -> None:
@@ -208,7 +212,7 @@ def _configure_mbedtls_handle(
 		case _:
 			key = key.private_key()
 
-	file = _as_file(temp, AsciiArmored.new(private_key=key))
+	file = _as_file(AsciiArmored.new(private_key=key))
 	handle.setopt(pycurl.SSLKEY, fspath(file.path))
 
 
@@ -316,18 +320,21 @@ def _container_blob(
 
 def _container_file(
 	cls: type[ContainerT],
-	directory: Path,
 	cert_source: CertificateSource,
 	key_source: PrivateKeySource | None,
 ) -> EncodedFile[ContainerT]:
 	blob = _container_blob(cls, cert_source, key_source)
-	return _as_file(directory, blob)
+	return _as_file(blob)
 
 
-def _as_file(directory: Path, encoded_data: EncodedT) -> EncodedFile[EncodedT]:
-	cert = encoded_data.certificate()
-	assert cert is not None, "Generated {cls.__name__} blobs must contain a certificate"
-	certfile = EncodedFile(type(encoded_data), directory / cert.fingerprint())
+def _as_file(encoded_data: EncodedT) -> EncodedFile[EncodedT]:
+	sha1 = hashlib.sha1()
+	if cert := encoded_data.certificate():
+		sha1.update(cert)
+	if key := encoded_data.private_key():
+		sha1.update(key)
+	path = temp_dir() / sha1.hexdigest()
+	certfile = EncodedFile(type(encoded_data), path)
 
 	# Assumes if the file exists this certificate has already been written to it
 	with suppress(FileExistsError):
