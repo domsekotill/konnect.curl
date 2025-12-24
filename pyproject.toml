@@ -41,6 +41,7 @@ flake8-print = ["-*"]
 
 [tool.pyright]
 include = ["konnect"]
+pythonVersion = "3.11"
 typeCheckingMode = "strict"
 reportMissingModuleSource = "none"
 reportRedeclaration = "none"
