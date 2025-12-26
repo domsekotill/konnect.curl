@@ -7,10 +7,10 @@ Classes for various DER encoded objects, with ASCII armoring and file storage fo
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from typing import ClassVar
 from typing import Final
-from typing import Never
 from typing import Protocol
 from typing import Self
 from typing import overload
@@ -217,26 +217,24 @@ class AsciiArmored(bytes):
 			return None
 
 	@overload
-	def find_first(self) -> Never: ...
+	def find_first(self, kind: type[Certificate], /) -> Certificate: ...
 
 	@overload
-	def find_first(self, *types: type[Certificate]) -> Certificate: ...
-
-	@overload
-	def find_first(self, *types: type[PrivateKeyT]) -> PrivateKeyT: ...
+	def find_first(self, kind: type[PrivateKeyT], /) -> PrivateKeyT: ...
 
 	def find_first(
-		self, *types: type[Certificate] | type[PrivateKey]
+		self, kind: type[Certificate] | type[PrivateKey]
 	) -> Certificate | PrivateKey:
 		"""
 		Return the first item with a label matching one of the provided types
 		"""
-		labels = {t.label: t for t in types}
+		labels = {t.label: t for t in _recurse_subclasses(kind) if t is not PrivateKey}
 		for data in ArmoredData.extract(self):
 			try:
 				cls = labels[data.label]
 			except KeyError:
 				continue
+			assert issubclass(cls, kind)
 			return cls(data)
 		msg = f"no matching labels found: {str.join(', ', labels)}"
 		raise NameError(msg)
@@ -282,3 +280,11 @@ class Pkcs12(bytes):
 		Return the first private key found in the encoded data
 		"""
 		raise NotImplementedError
+
+
+def _recurse_subclasses(
+	cls: type[Certificate | PrivateKey],
+) -> Iterator[type[Certificate | PrivateKey]]:
+	yield cls
+	for subcls in cls.__subclasses__():
+		yield from _recurse_subclasses(subcls)
