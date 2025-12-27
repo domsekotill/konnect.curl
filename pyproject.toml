@@ -40,7 +40,7 @@ flake8-print = ["-*"]
 
 
 [tool.pyright]
-include = ["konnect"]
+include = ["konnect", "tests"]
 typeCheckingMode = "strict"
 reportMissingModuleSource = "none"
 reportRedeclaration = "none"
