@@ -252,6 +252,7 @@ def _configure_mbedtls_handle(
 		case None:
 			return
 		case EncodedFile() if isinstance(key.contents, AsciiArmored):
+			handle.setopt(pycurl.SSLKEYTYPE, "PEM")
 			handle.setopt(pycurl.SSLKEY, fspath(key.path))
 			return
 		case EncodedFile():
@@ -260,6 +261,7 @@ def _configure_mbedtls_handle(
 			key = key.private_key()
 
 	file = _as_file(AsciiArmored.new(private_key=key))
+	handle.setopt(pycurl.SSLKEYTYPE, "PEM")
 	handle.setopt(pycurl.SSLKEY, fspath(file.path))
 
 

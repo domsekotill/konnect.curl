@@ -78,7 +78,9 @@ def test_add_client_certificate(
 	)
 
 	for params in parameter_generator(tmp_path):
-		monkeypatch.setattr(pycurl, "version_info", lambda version=params.version: [...] * 5 + [version])
+		monkeypatch.setattr(
+			pycurl, "version_info", lambda version=params.version: [...] * 5 + [version]
+		)
 		with subtests.test(f"{params.msg} [{params.version}]"):
 			if isinstance(params, SubtestParamsCombined):
 				try:
@@ -296,5 +298,189 @@ def parameter_generator(
 		[
 			(pycurl.SSLCERTTYPE, "P12"),
 			(pycurl.SSLCERT, fspath(sample_file_p12.path)),
+		],
+	)
+
+	### MbedTLS tests
+	yield SubtestParamsCombined(
+		"combined cert and key (PEM)",
+		"MbedTLS/0.0.0",
+		sample_blob_pem,
+		[
+			(pycurl.SSLCERTTYPE, "PEM"),
+			(pycurl.SSLCERT_BLOB, sample_blob_pem.to_bytes()),
+		],
+	)
+	yield SubtestParamsCombined(
+		"combined cert and key file (PEM)",
+		"MbedTLS/0.0.0",
+		sample_file_pem,
+		[
+			(pycurl.SSLCERTTYPE, "PEM"),
+			(pycurl.SSLCERT, fspath(sample_file_pem.path)),
+		],
+	)
+	# yield SubtestParamsCombined(
+	# 	"combined cert and key (PKCS12)",
+	# 	"MbedTLS/0.0.0",
+	# 	sample_blob_p12,
+	# 	[
+	# 		(pycurl.SSLCERTTYPE, "PEM"),
+	# 		(
+	# 			pycurl.SSLCERT_BLOB,
+	# 			AsciiArmored.new(
+	# 				certificate=sample_blob_p12.certificate(),
+	# 				private_key=sample_blob_p12.private_key(),
+	# 			),
+	# 		),
+	# 	],
+	# )
+	# yield SubtestParamsCombined(
+	# 	"combined cert and key file (PKCS12)",
+	# 	"MbedTLS/0.0.0",
+	# 	sample_file_p12,
+	# 	[
+	# 		(pycurl.SSLCERTTYPE, "PEM"),
+	# 		(
+	# 			pycurl.SSLCERT_BLOB,
+	# 			AsciiArmored.new(
+	# 				certificate=sample_file_p12.contents.certificate(),
+	# 				private_key=sample_file_p12.contents.private_key(),
+	# 			),
+	# 		),
+	# 	],
+	# )
+	yield SubtestParamsSeparate(
+		"separated cert blob (x509) and key blob (RSA)",
+		"MbedTLS/0.0.0",
+		cert := Certificate(b"xxx"),
+		key := RSAPrivateKey(b"xxx"),
+		[
+			(pycurl.SSLCERTTYPE, "DER"),
+			(pycurl.SSLCERT_BLOB, cert.to_bytes()),
+			(pycurl.SSLKEYTYPE, "PEM"),
+			(pycurl.SSLKEY, fspath(tmp_path / STATIC_SHA1)),
+		],
+	)
+	yield SubtestParamsSeparate(
+		"separated cert file (x509) and key file (RSA)",
+		"MbedTLS/0.0.0",
+		sample_file_x509,
+		sample_file_rsa,
+		[
+			(pycurl.SSLCERTTYPE, "DER"),
+			(pycurl.SSLCERT, fspath(sample_file_x509.path)),
+			(pycurl.SSLKEYTYPE, "PEM"),
+			(pycurl.SSLKEY, fspath(tmp_path / STATIC_SHA1)),
+		],
+	)
+	yield SubtestParamsSeparate(
+		"separated cert file (x509) and key file (PEM)",
+		"MbedTLS/0.0.0",
+		sample_file_x509,
+		sample_file_pem,
+		[
+			(pycurl.SSLCERTTYPE, "DER"),
+			(pycurl.SSLCERT, fspath(sample_file_x509.path)),
+			(pycurl.SSLKEYTYPE, "PEM"),
+			(pycurl.SSLKEY, fspath(sample_file_pem.path)),
+		],
+	)
+
+	### WolfSSL tests
+	yield SubtestParamsCombined(
+		"combined cert and key (PEM)",
+		"WolfSSL/0.0.0",
+		sample_blob_pem,
+		[
+			(pycurl.SSLCERTTYPE, "PEM"),
+			(pycurl.SSLCERT_BLOB, sample_blob_pem.to_bytes()),
+		],
+	)
+	yield SubtestParamsCombined(
+		"combined cert and key file (PEM)",
+		"WolfSSL/0.0.0",
+		sample_file_pem,
+		[
+			(pycurl.SSLCERTTYPE, "PEM"),
+			(pycurl.SSLCERT, fspath(sample_file_pem.path)),
+		],
+	)
+	# yield SubtestParamsCombined(
+	# 	"combined cert and key (PKCS12)",
+	# 	"WolfSSL/0.0.0",
+	# 	sample_blob_p12,
+	# 	[
+	# 		(pycurl.SSLCERTTYPE, "PEM"),
+	# 		(
+	# 			pycurl.SSLCERT_BLOB,
+	# 			AsciiArmored.new(
+	# 				certificate=sample_blob_p12.certificate(),
+	# 				private_key=sample_blob_p12.private_key(),
+	# 			),
+	# 		),
+	# 	],
+	# )
+	# yield SubtestParamsCombined(
+	# 	"combined cert and key file (PKCS12)",
+	# 	"WolfSSL/0.0.0",
+	# 	sample_file_p12,
+	# 	[
+	# 		(pycurl.SSLCERTTYPE, "PEM"),
+	# 		(
+	# 			pycurl.SSLCERT_BLOB,
+	# 			AsciiArmored.new(
+	# 				certificate=sample_file_p12.contents.certificate(),
+	# 				private_key=sample_file_p12.contents.private_key(),
+	# 			),
+	# 		),
+	# 	],
+	# )
+	# yield SubtestParamsSeparate(
+	# 	"separated cert blob (DER) and key blob (PKCS12)",
+	# 	"WolfSSL/0.0.0",
+	# 	cert := Certificate(b"xxx"),
+	# 	sample_blob_p12,
+	# 	[
+	# 		(pycurl.SSLCERTTYPE, "DER"),
+	# 		(pycurl.SSLCERT_BLOB, cert.to_bytes()),
+	# 		(pycurl.SSLKEYTYPE, "DER"),
+	# 		(pycurl.SSLKEY_BLOB, sample_blob_p12.private_key().to_bytes()),
+	# 	],
+	# )
+	yield SubtestParamsSeparate(
+		"separated cert blob (x509) and key blob (RSA)",
+		"WolfSSL/0.0.0",
+		cert := Certificate(b"xxx"),
+		key := RSAPrivateKey(b"xxx"),
+		[
+			(pycurl.SSLCERTTYPE, "DER"),
+			(pycurl.SSLCERT_BLOB, cert.to_bytes()),
+			(pycurl.SSLKEYTYPE, "DER"),
+			(pycurl.SSLKEY_BLOB, key.to_bytes()),
+		],
+	)
+	yield SubtestParamsSeparate(
+		"separated cert file (x509) and key file (RSA)",
+		"WolfSSL/0.0.0",
+		sample_file_x509,
+		sample_file_rsa,
+		[
+			(pycurl.SSLCERTTYPE, "DER"),
+			(pycurl.SSLCERT, fspath(sample_file_x509.path)),
+			(pycurl.SSLKEYTYPE, "DER"),
+			(pycurl.SSLKEY_BLOB, sample_file_rsa.contents.private_key()),
+		],
+	)
+	yield SubtestParamsSeparate(
+		"separated cert file (x509) and key file (PEM)",
+		"WolfSSL/0.0.0",
+		sample_file_x509,
+		sample_file_pem,
+		[
+			(pycurl.SSLCERTTYPE, "DER"),
+			(pycurl.SSLCERT, fspath(sample_file_x509.path)),
+			(pycurl.SSLKEYTYPE, "PEM"),
+			(pycurl.SSLKEY, fspath(sample_file_pem.path)),
 		],
 	)
