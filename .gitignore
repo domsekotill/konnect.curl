@@ -1,12 +1,11 @@
 # Standard python boilerplate
 *.py[co]
+*.so
 
-# Setuptools / Pip
-.eggs
-*.egg-info
-*.dist-info
-build/
-dist/
+# Packages
+*.whl
+*.tar
+*.tar.*
 
 # unit-testing, coverage, etc.
 /results/
