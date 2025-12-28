@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2023-2024  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2025  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Script for generating stub packages from konnect.curl source code
@@ -47,7 +47,7 @@ STUB_PKG_CONFIG = {
 Config: TypeAlias = dict[str, object]
 
 
-def get_object(config: Config, *path: str|int) -> object:
+def get_object(config: Config, *path: str | int) -> object:
 	"""
 	Return an object from the configuration object accessed by path keys/indexes
 	"""
@@ -57,7 +57,7 @@ def get_object(config: Config, *path: str|int) -> object:
 	return obj
 
 
-def get_config(config: Config, *path: str|int) -> Config:
+def get_config(config: Config, *path: str | int) -> Config:
 	"""
 	Get a sub-config mapping from the configuration object accessed by path keys/indexes
 	"""
@@ -67,7 +67,7 @@ def get_config(config: Config, *path: str|int) -> Config:
 	return value
 
 
-def get_array(config: Config, *path: str|int) -> list[object]:
+def get_array(config: Config, *path: str | int) -> list[object]:
 	"""
 	Return a list from the configuration object accessed by path keys/indexes
 	"""
@@ -77,7 +77,7 @@ def get_array(config: Config, *path: str|int) -> list[object]:
 	return sequence
 
 
-def get_str(config: Config, *path: str|int) -> str:
+def get_str(config: Config, *path: str | int) -> str:
 	"""
 	Get a string from the configuration object accessed by path keys/indexes
 	"""
@@ -92,7 +92,7 @@ class Environment:
 	A simple virtual environment (venv) interface
 	"""
 
-	def __init__(self, path: Path):
+	def __init__(self, path: Path) -> None:
 		self.path = path
 		self.bin = path / "bin"
 		self.python = self.bin / "python"
@@ -112,13 +112,13 @@ class Environment:
 		"""
 		self.exec_module("pip", "install", package)
 
-	def exec_module(self, module: str, *args: str|Path) -> None:
+	def exec_module(self, module: str, *args: str | Path) -> None:
 		"""
 		Execute the named module from the environment with the given arguments
 		"""
 		run([self.python, "-m", module, *args], check=True)
 
-	def run(self, name: str, *args: str|Path) -> None:
+	def run(self, name: str, *args: str | Path) -> None:
 		"""
 		Execute a binary or script installed in the environment
 		"""
@@ -130,9 +130,9 @@ class Project:
 	Information about the root project
 	"""
 
-	def __init__(self, root: Path = CWD):
+	def __init__(self, root: Path = CWD) -> None:
 		self.root = root
-		self._config: Config|None = None
+		self._config: Config | None = None
 
 	@property
 	def config(self) -> Config:
@@ -171,7 +171,7 @@ class Package:
 	Methods for preparing and building the stubs packages
 	"""
 
-	def __init__(self, project: Project):
+	def __init__(self, project: Project) -> None:
 		self.project = project
 
 	def complete_config(self) -> Config:
@@ -215,7 +215,8 @@ class Package:
 		env.run(
 			"stubgen",
 			"--verbose",
-			"--output", build_dir / "konnect-stubs",
+			"--output",
+			build_dir / "konnect-stubs",
 			self.project.root / "konnect/curl",
 		)
 		copyfile(
@@ -234,7 +235,8 @@ class Package:
 		env.install("build")
 		env.exec_module(
 			"build",
-			"--outdir", self.project.root / "dist",
+			"--outdir",
+			self.project.root / "dist",
 			build_dir,
 		)
 

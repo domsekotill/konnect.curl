@@ -1,4 +1,4 @@
-# Copyright 2023-2024  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2025  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Provides `Request`, a simple implementation of `konnect.curl.abc.RequestProtocol`
@@ -20,7 +20,7 @@ class Request:
 	url: str
 	destination: IO[bytes]
 
-	def __init__(self, url: str, destination: IO[bytes]):
+	def __init__(self, url: str, destination: IO[bytes]) -> None:
 		self.url = url
 		self.destination = destination
 

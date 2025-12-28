@@ -1,4 +1,4 @@
-# Copyright 2023  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023, 2025  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 
 class CurlError(Exception):
@@ -12,7 +12,7 @@ class CurlError(Exception):
 
 	args: tuple[int, str]
 
-	def __init__(self, code: int, msg: str):
+	def __init__(self, code: int, msg: str) -> None:
 		super().__init__(code, msg)
 
 	def __str__(self) -> str:

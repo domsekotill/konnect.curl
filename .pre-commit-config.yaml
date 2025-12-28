@@ -75,10 +75,10 @@ repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.14.10
   hooks:
-  - id: ruff
-    args: ["--fix"]
+  - id: ruff-check
+    args: [--fix, --unsafe-fixes]
   - id: ruff-format
-    stages: [manual]
+    stages: [pre-commit, manual]
 
 - repo: https://github.com/RobertCraigie/pyright-python
   rev: v1.1.407

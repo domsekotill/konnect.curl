@@ -44,7 +44,7 @@ class Multi:
 		self._handler.setopt(pycurl.M_SOCKETFUNCTION, self._add_socket_evt)
 		self._handler.setopt(pycurl.M_TIMERFUNCTION, self._add_timer_evt)
 		self._io_events = dict[int, SocketEvt]()
-		self._deadline: Quantity[Time]|None = None
+		self._deadline: Quantity[Time] | None = None
 		self._perform_cond = anyio.Condition()
 		self._governor_delegated = False
 		self._completed = dict[pycurl.Curl, int]()
@@ -65,9 +65,9 @@ class Multi:
 	def _add_timer_evt(self, delay: int) -> None:
 		# Callback registered with CURLMOPT_TIMERFUNCTION, registers when the transfer
 		# manager next wants to be activated if no prior events occur, in milliseconds.
-		self._deadline = \
-			None if delay < 0 else \
-			anyio.current_time() @ SECONDS + delay @ MILLISECONDS
+		self._deadline = (
+			None if delay < 0 else anyio.current_time() @ SECONDS + delay @ MILLISECONDS
+		)
 
 	async def _single_event(self) -> int:
 		# Await a single event and call pycurl.CurlMulti.socket_action to inform the handler
@@ -81,7 +81,10 @@ class Multi:
 		# Start concurrent tasks awaiting each of the registered events, await a response
 		# from the first task to wake and send one.
 		resp: Event | None = None
-		async with anyio.create_task_group() as tasks, _make_evt_channel() as (sendchan, recvchan):
+		async with (
+			anyio.create_task_group() as tasks,
+			_make_evt_channel() as (sendchan, recvchan),
+		):
 			for socket, evt in self._io_events.items():
 				if SocketEvt.IN in evt:
 					tasks.start_soon(_wait_readable, socket, sendchan)
@@ -126,7 +129,9 @@ class Multi:
 			yield from ((handle, pycurl.E_OK) for handle in complete)
 			yield from ((handle, res) for (handle, res, _) in failed)
 
-	async def _govern_transfer(self, request: RequestProtocol[U, R], handle: pycurl.Curl) -> None:
+	async def _govern_transfer(
+		self, request: RequestProtocol[U, R], handle: pycurl.Curl
+	) -> None:
 		# Await _single_event() repeatedly until the wanted handle is completed.
 		# Store all intermediate completed handles and notify interested tasks.
 		remaining = -1
@@ -183,8 +188,10 @@ class Multi:
 
 
 @asynccontextmanager
-async def _make_evt_channel() -> AsyncIterator[tuple[ObjectSendStream[Event|None], ObjectReceiveStream[Event|None]]]:
-	send, recv = anyio.create_memory_object_stream[Event|None](1)
+async def _make_evt_channel() -> AsyncIterator[
+	tuple[ObjectSendStream[Event | None], ObjectReceiveStream[Event | None]]
+]:
+	send, recv = anyio.create_memory_object_stream[Event | None](1)
 	async with send, recv:
 		yield send, recv
 

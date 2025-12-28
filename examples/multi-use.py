@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2023  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023, 2025  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 An example script for demonstrating concurrent Curl transfers with konnect.curl.Multi
@@ -47,7 +47,9 @@ async def _test() -> None:
 
 			# Give time for the above transfers to get going, then start another.
 			await anyio.sleep(0.1)
-			tasks.start_soon(get_url, multi, "https://code.kodo.org.uk/konnect/konnect.curl/", destination)
+			tasks.start_soon(
+				get_url, multi, "https://code.kodo.org.uk/konnect/konnect.curl/", destination
+			)
 
 
 if __name__ == "__main__":
