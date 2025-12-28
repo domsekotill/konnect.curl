@@ -80,6 +80,7 @@ class Multi:
 
 		# Start concurrent tasks awaiting each of the registered events, await a response
 		# from the first task to wake and send one.
+		resp: Event | None = None
 		async with anyio.create_task_group() as tasks, _make_evt_channel() as (sendchan, recvchan):
 			for socket, evt in self._io_events.items():
 				if SocketEvt.IN in evt:
@@ -171,7 +172,7 @@ class Multi:
 					await self._perform_cond.wait()
 			if request.has_update():
 				return request.get_update()
-		match self._completed.pop(handle):  # noqa: R503
+		match self._completed.pop(handle):
 			case pycurl.E_OK:
 				self._del_handle(request)
 				return request.completed(handle)
