@@ -1,4 +1,4 @@
-# Copyright 2025  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2025-2026  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Functions for detecting encodings of files or in-memory byte strings
@@ -73,6 +73,25 @@ def identify_certificate_file(
 				return EncodedFile(contents, path)
 			case encoding:
 				msg = f"file of type {encoding}, expected a certificate encoding: {path}"
+				raise TypeError(msg)
+
+
+def identify_key_file(
+	path: Path,
+) -> EncodedFile[AsciiArmored] | EncodedFile[Pkcs12] | EncodedFile[PrivateKey]:
+	"""
+	Return the encoding of a private key file in the form of an `EncodedFile` instance
+	"""
+	with path.open("br") as file:
+		match identify_blob(file.read(MAX_READ_SIZE)):
+			case AsciiArmored() as contents:
+				return EncodedFile(contents, path)
+			case Pkcs12() as contents:
+				return EncodedFile(contents, path)
+			case PrivateKey() as contents:
+				return EncodedFile(contents, path)
+			case encoding:
+				msg = f"file of type {encoding}, expected a private key encoding: {path}"
 				raise TypeError(msg)
 
 
