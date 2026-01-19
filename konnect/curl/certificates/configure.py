@@ -1,4 +1,4 @@
-# Copyright 2025  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2025-2026  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Curl handle configuration supporting various TLS backends
@@ -11,7 +11,7 @@ import re
 from os import fspath
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import TYPE_CHECKING
+from typing import TypeAlias
 from typing import TypeVar
 from typing import assert_never
 from typing import overload
@@ -27,30 +27,23 @@ from .encodings import Pkcs12
 from .encodings import PrivateKey
 from .files import EncodedFile
 
+ContainerT = TypeVar("ContainerT", AsciiArmored, Pkcs12)
+EncodedT = TypeVar("EncodedT", bound=Encoding)
+RawT = TypeVar("RawT", Certificate, PrivateKey)
+
+CommonEncodedSource: TypeAlias = (
+	AsciiArmored | Pkcs12 | EncodedFile[AsciiArmored] | EncodedFile[Pkcs12]
+)
+EncodedSource: TypeAlias = CommonEncodedSource | RawT | EncodedFile[RawT]
+
+CertificateSource: TypeAlias = EncodedSource[Certificate]
+PrivateKeySource: TypeAlias = EncodedSource[PrivateKey]
+
 __all__ = [
+	"CertificateSource",
+	"PrivateKeySource",
 	"add_client_certificate",
 ]
-
-if TYPE_CHECKING:
-	from typing import TypeAlias
-
-	ContainerT = TypeVar("ContainerT", AsciiArmored, Pkcs12)
-	EncodedT = TypeVar("EncodedT", bound=Encoding)
-	RawT = TypeVar("RawT", Certificate, PrivateKey)
-
-	CommonEncodedSource: TypeAlias = (
-		AsciiArmored | Pkcs12 | EncodedFile[AsciiArmored] | EncodedFile[Pkcs12]
-	)
-	EncodedSource: TypeAlias = CommonEncodedSource | RawT | EncodedFile[RawT]
-
-	CertificateSource: TypeAlias = EncodedSource[Certificate]
-	PrivateKeySource: TypeAlias = EncodedSource[PrivateKey]
-
-	__all__ = [
-		"CertificateSource",
-		"PrivateKeySource",
-		"add_client_certificate",
-	]
 
 _tempdir: Path | None = None
 

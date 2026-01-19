@@ -1,4 +1,4 @@
-# Copyright 2025  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2025-2026  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Cryptographic certificate management
@@ -16,8 +16,8 @@ The backends currently supported are:
  - Secure Transport
 """
 
-from typing import TYPE_CHECKING
-
+from .configure import CertificateSource
+from .configure import PrivateKeySource
 from .configure import add_ca_certificate
 from .configure import add_client_certificate
 from .encodings import AsciiArmored
@@ -33,33 +33,15 @@ from .files import EncodedFile
 __all__ = [
 	"AsciiArmored",
 	"Certificate",
+	"CertificateSource",
 	"ECPrivateKey",
 	"EncodedFile",
 	"Pkcs8EncryptedPrivateKey",
 	"Pkcs8PrivateKey",
 	"Pkcs12",
 	"PrivateKey",
+	"PrivateKeySource",
 	"RSAPrivateKey",
 	"add_ca_certificate",
 	"add_client_certificate",
 ]
-
-if TYPE_CHECKING:
-	from .configure import CertificateSource
-	from .configure import PrivateKeySource
-
-	__all__ = [
-		"AsciiArmored",
-		"Certificate",
-		"CertificateSource",
-		"ECPrivateKey",
-		"EncodedFile",
-		"Pkcs8EncryptedPrivateKey",
-		"Pkcs8PrivateKey",
-		"Pkcs12",
-		"PrivateKey",
-		"PrivateKeySource",
-		"RSAPrivateKey",
-		"add_ca_certificate",
-		"add_client_certificate",
-	]
