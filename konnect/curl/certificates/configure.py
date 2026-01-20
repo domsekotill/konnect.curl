@@ -42,6 +42,7 @@ PrivateKeySource: TypeAlias = EncodedSource[PrivateKey]
 __all__ = [
 	"CertificateSource",
 	"PrivateKeySource",
+	"add_ca_certificate",
 	"add_client_certificate",
 ]
 
