@@ -17,6 +17,7 @@ The backends currently supported are:
 """
 
 from .configure import CertificateSource
+from .configure import CommonEncodedSource
 from .configure import PrivateKeySource
 from .configure import add_ca_certificate
 from .configure import add_client_certificate
@@ -34,6 +35,7 @@ __all__ = [
 	"AsciiArmored",
 	"Certificate",
 	"CertificateSource",
+	"CommonEncodedSource",
 	"ECPrivateKey",
 	"EncodedFile",
 	"Pkcs8EncryptedPrivateKey",
