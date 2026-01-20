@@ -1,6 +1,6 @@
 [project]
 name = "konnect.curl"
-version = "0.2.2"
+version = "0.2.3"
 description = "Pythonic, asynchronous interface to Curl (cURL) using `anyio`"
 license = {file = "LICENCE.txt"}
 
