@@ -1,4 +1,4 @@
-# Copyright 2023-2025  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2026  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 from __future__ import annotations
 
@@ -119,6 +119,7 @@ class Multi:
 	def _del_handle(self, request: RequestProtocol[object, object]) -> None:
 		handle = self._requests.pop(request)
 		self._handler.remove_handle(handle)
+		handle.close()
 
 	def _yield_complete(self) -> Iterator[tuple[pycurl.Curl, int]]:
 		# Convert pycurl.CurlMulti.info_read() output into tuples of (handle, code) and
@@ -183,8 +184,9 @@ class Multi:
 				return request.completed(handle)
 			case err:
 				assert isinstance(err, int)  # nudge mypy
+				errstr = handle.errstr()
 				self._del_handle(request)
-				raise CurlError(err, handle.errstr())
+				raise CurlError(err, errstr)
 
 
 @asynccontextmanager
