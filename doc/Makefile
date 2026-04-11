@@ -10,11 +10,14 @@ HTML_BUILDER = html
 # Values above this line may be modified from cmdline
 # ======
 
+PKG_NAMESPACE = konnect
+PKG_NAME = curl
+
 BUILD_SRC = Makefile conf.py
-SPHINX_SRC = $(BUILD_SRC) index.md konnect.curl.rst
+SPHINX_SRC = $(BUILD_SRC) index.md $(PKG_NAMESPACE).$(PKG_NAME).rst
 #SPHINX_SRC += **additional .md files**
 APIDOC_SRC := $(BUILD_SRC)
-APIDOC_SRC += $(wildcard ../konnect/curl/*.py)
+APIDOC_SRC += $(wildcard ../$(PKG_NAMESPACE)/$(PKG_NAME)/*.py)
 APIDOC_SRC += $(wildcard templates/apidoc/*.rst_t)
 
 BUILDOUT = $(@D)
@@ -29,7 +32,7 @@ html: doctest $(BUILDDIR)/html/index.html
 
 .PHONY all: man
 man: BUILDER=man
-man: doctest $(BUILDDIR)/man/konnectkonnectcurl.1
+man: doctest $(BUILDDIR)/man/$(PKG_NAMESPACE)$(PKG_NAMESPACE)$(PKG_NAME).1
 
 .PHONY all: text
 text: BUILDER=text
@@ -42,12 +45,12 @@ doctest: $(BUILDDIR)/doctest/output.txt $(APIDOC_SRC)
 .PHONY: clean
 clean:
 	-rm -rf $(BUILDDIR)
-	-rm konnect.*
+	-rm $(PKG_NAMESPACE).*
 
 
-konnect.curl.rst: $(BUILD_SRC) $(APIDOC_SRC)
-	$(SPHINXAPIDOC) $(SPHINXAPIDOCOPTS) --implicit-namespaces -MTft templates/apidoc -o . ../konnect
-	@rm konnect.rst
+$(PKG_NAMESPACE).$(PKG_NAME).rst: $(BUILD_SRC) $(APIDOC_SRC)
+	$(SPHINXAPIDOC) $(SPHINXAPIDOCOPTS) --implicit-namespaces -MTft templates/apidoc -o . ../$(PKG_NAMESPACE)
+	@rm $(PKG_NAMESPACE).rst
 	@touch $@
 
 $(BUILDDIR)/%: $(BUILD_SRC) $(SPHINX_SRC) | $(BUILDDIR)
