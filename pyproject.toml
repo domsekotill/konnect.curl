@@ -3,6 +3,7 @@ name = "konnect.curl"
 version = "0.2.3"
 description = "Pythonic, asynchronous interface to Curl (cURL) using `anyio`"
 license = {file = "LICENCE.txt"}
+readme = "README.md"
 
 classifiers = [
 	"Development Status :: 4 - Beta",
