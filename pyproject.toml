@@ -20,6 +20,14 @@ dependencies = [
 	"pyasn1-modules",
 ]
 
+[project.optional-dependencies]
+docs = [
+	"kodo.plugins.sphinx-docstrings ~=0.1.1",
+	"myst-parser",
+	"sphinx ~=9.0",
+	"sphinx-rtd-theme",
+]
+
 [[project.authors]]
 name = "Dom Sekotill"
 email = "dom.sekotill@kodo.org.uk"

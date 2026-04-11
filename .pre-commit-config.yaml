@@ -42,6 +42,7 @@ repos:
   - id: check-for-squash
   - id: copyright-notice
     args: [--min-size=1]
+    exclude: doc/.*
     stages: [pre-commit, manual]
   - id: protect-first-parent
 
