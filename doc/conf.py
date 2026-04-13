@@ -40,4 +40,5 @@ myst_substitutions = {}
 
 intersphinx_mapping = {
 	"python": ("https://docs.python.org/3", None),
+	"kodo.quantities": ("https://docs.kodo.org.uk/kodo.quantities", None),
 }
