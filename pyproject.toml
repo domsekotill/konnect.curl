@@ -33,6 +33,12 @@ docs = [
 name = "Dom Sekotill"
 email = "dom.sekotill@kodo.org.uk"
 
+[project.urls]
+Source = "https://code.kodo.org.uk/konnect/konnect.curl"
+Issues = "https://code.kodo.org.uk/konnect/konnect.curl/-/issues"
+Documentation = "https://docs.kodo.org.uk/konnect.curl"
+
+
 [build-system]
 requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
