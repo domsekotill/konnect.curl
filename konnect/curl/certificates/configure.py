@@ -90,7 +90,7 @@ def add_ca_certificate(  # noqa: C901
 			if not (cert := cert_source.contents.certificate()):
 				msg = f"no certificate found in {cert_source!r}"
 				raise ValueError(msg)
-			cert_source = _container_file(AsciiArmored, cert, None)
+			cert_source = _container_file(AsciiArmored, cert, None, require_key=False)
 			handle.setopt(pycurl.CAINFO, fspath(cert_source.path))
 		case AsciiArmored() if use_blob:
 			handle.setopt(pycurl.CAINFO_BLOB, cert_source.to_bytes())
@@ -101,7 +101,7 @@ def add_ca_certificate(  # noqa: C901
 			if not (cert := cert_source.certificate()):
 				msg = f"no certificate found in {cert_source!r}"
 				raise ValueError(msg)
-			cert_source = _container_file(AsciiArmored, cert, None)
+			cert_source = _container_file(AsciiArmored, cert, None, require_key=False)
 			handle.setopt(pycurl.CAINFO, fspath(cert_source.path))
 
 
@@ -325,6 +325,8 @@ def _container_blob(
 	cls: type[ContainerT],
 	cert_source: CertificateSource,
 	key_source: PrivateKeySource | None,
+	*,
+	require_key: bool = True,
 ) -> ContainerT:
 	match cert_source:
 		case AsciiArmored() | Pkcs12():
@@ -353,7 +355,7 @@ def _container_blob(
 	if cert is None:
 		msg = f"no certificate found in {cert_source!r}"
 		raise ValueError(msg)
-	if key is None:
+	if require_key and key is None:
 		msg = f"no private key found in {key_source or cert_source!r}"
 		raise ValueError(msg)
 
@@ -364,8 +366,10 @@ def _container_file(
 	cls: type[ContainerT],
 	cert_source: CertificateSource,
 	key_source: PrivateKeySource | None,
+	*,
+	require_key: bool = True,
 ) -> EncodedFile[ContainerT]:
-	blob = _container_blob(cls, cert_source, key_source)
+	blob = _container_blob(cls, cert_source, key_source, require_key=require_key)
 	return _as_file(blob)
 
 
