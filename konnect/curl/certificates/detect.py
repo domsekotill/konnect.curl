@@ -6,6 +6,7 @@ Functions for detecting encodings of files or in-memory byte strings
 
 from pathlib import Path
 from typing import Final
+from typing import TypeAlias
 
 from pyasn1.codec.der import decoder
 from pyasn1.error import PyAsn1Error
@@ -26,6 +27,8 @@ from .encodings import RSAPrivateKey
 from .files import EncodedFile
 
 __all__ = [
+	"CertificateFile",
+	"PrivateKeyFile",
 	"identify_blob",
 	"identify_certificate_file",
 	"identify_file",
@@ -33,15 +36,17 @@ __all__ = [
 
 MAX_READ_SIZE: Final = 2**14  # 16kiB
 
+CertificateFile: TypeAlias = (
+	EncodedFile[AsciiArmored] | EncodedFile[Certificate] | EncodedFile[Pkcs12]
+)
+PrivateKeyFile: TypeAlias = (
+	EncodedFile[AsciiArmored] | EncodedFile[Pkcs12] | EncodedFile[PrivateKey]
+)
+
 
 def identify_file(
 	path: Path,
-) -> (
-	EncodedFile[AsciiArmored]
-	| EncodedFile[Certificate]
-	| EncodedFile[Pkcs12]
-	| EncodedFile[PrivateKey]
-):
+) -> CertificateFile | PrivateKeyFile:
 	"""
 	Return the encoding of a file in the form of an `EncodedFile` instance
 	"""
@@ -59,7 +64,7 @@ def identify_file(
 
 def identify_certificate_file(
 	path: Path,
-) -> EncodedFile[AsciiArmored] | EncodedFile[Certificate] | EncodedFile[Pkcs12]:
+) -> CertificateFile:
 	"""
 	Return the encoding of a certificate file in the form of an `EncodedFile` instance
 	"""
@@ -78,7 +83,7 @@ def identify_certificate_file(
 
 def identify_key_file(
 	path: Path,
-) -> EncodedFile[AsciiArmored] | EncodedFile[Pkcs12] | EncodedFile[PrivateKey]:
+) -> PrivateKeyFile:
 	"""
 	Return the encoding of a private key file in the form of an `EncodedFile` instance
 	"""

@@ -21,6 +21,8 @@ from .configure import CommonEncodedSource
 from .configure import PrivateKeySource
 from .configure import add_ca_certificate
 from .configure import add_client_certificate
+from .detect import CertificateFile
+from .detect import PrivateKeyFile
 from .encodings import AsciiArmored
 from .encodings import Certificate
 from .encodings import ECPrivateKey
@@ -34,6 +36,7 @@ from .files import EncodedFile
 __all__ = [
 	"AsciiArmored",
 	"Certificate",
+	"CertificateFile",
 	"CertificateSource",
 	"CommonEncodedSource",
 	"ECPrivateKey",
@@ -42,6 +45,7 @@ __all__ = [
 	"Pkcs8PrivateKey",
 	"Pkcs12",
 	"PrivateKey",
+	"PrivateKeyFile",
 	"PrivateKeySource",
 	"RSAPrivateKey",
 	"add_ca_certificate",
