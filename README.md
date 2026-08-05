@@ -1,5 +1,7 @@
 [![gitlab-ico]][gitlab-link]
-<!-- [![github-ico]][github-link] -->
+[![github-ico]][github-link]
+[![docs-ico]][docs-link]
+
 [![licence-mpl20]](/LICENCE.txt)
 [![pre-commit-ico]][pre-commit-link]
 <!-- [![pipeline-status]][pipeline-report] -->
@@ -69,6 +71,13 @@ use only one.
 [github-link]:
 	https://github.com/domsekotill/kilter.protocol
 	"Konnect at github.com"
+
+[docs-ico]:
+	https://img.shields.io/badge/Documentation-docs.kodo.org.uk-blue.svg
+
+[docs-link]:
+	https://docs.kodo.org.uk/konnect.curl/
+	"konnect.curl Documentation"
 
 [pre-commit-ico]:
   https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white
