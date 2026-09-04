@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-[0.2.5] - 2026-08-07
+[0.2.5] - 2026-09-04
 --------------------
 
 ### Added
@@ -11,7 +11,7 @@ Changelog
     
 ### Fixed
 
-- Fix CA certificates not being accepted due to not haing private keys (#13)
+- Fix CA certificates not being accepted due to not having private keys (#13)
 
 
 [0.2.4] - 2026-04-14
