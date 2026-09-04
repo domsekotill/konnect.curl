@@ -2,8 +2,8 @@ Changelog
 =========
 
 
-[0.2.5] - 2026-09-04
---------------------
+0.2.5 (2026-09-04)
+------------------
 
 ### Added
 
@@ -14,8 +14,8 @@ Changelog
 - Fix CA certificates not being accepted due to not having private keys (#13)
 
 
-[0.2.4] - 2026-04-14
---------------------
+0.2.4 (2026-04-14)
+------------------
 
 ### Added
 
@@ -26,24 +26,24 @@ Changelog
 - Ensure individual request handles are closed when completed
 
 
-[0.2.3] - 2026-01-20
---------------------
+0.2.3 (2026-01-20)
+------------------
 
 ### Fixed
 
 - Add missing export of `CommonEncodedSource` from .certificates
 
 
-[0.2.2] - 2026-01-20
---------------------
+0.2.2 (2026-01-20)
+------------------
 
 ### Added
 
 - Add client and CA certificate support, for some backends
 
 
-[0.2.1] - 2025-04-15
---------------------
+0.2.1 (2025-04-15)
+------------------
 
 ### Fixed
 
@@ -51,8 +51,8 @@ Changelog
 - Fix a socket/file-descriptor issue, possibly affecting C-ares enabled builds of Curl
 
 
-[0.2.0] - 2024-12-03
---------------------
+0.2.0 (2024-12-03)
+------------------
 
 ### Changed
 
