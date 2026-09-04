@@ -10,4 +10,5 @@ Konnect Curl Core (konnect.curl)
 :caption: Sections
 
 konnect.curl
+changelog.md
 ```

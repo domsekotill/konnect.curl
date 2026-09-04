@@ -15,7 +15,7 @@ PKG_NAME = curl
 
 BUILD_SRC = Makefile conf.py
 SPHINX_SRC = $(BUILD_SRC) index.md $(PKG_NAMESPACE).$(PKG_NAME).rst
-#SPHINX_SRC += **additional .md files**
+SPHINX_SRC += changelog.md ../CHANGELOG.md
 APIDOC_SRC := $(BUILD_SRC)
 APIDOC_SRC += $(wildcard ../$(PKG_NAMESPACE)/$(PKG_NAME)/*.py)
 APIDOC_SRC += $(wildcard templates/apidoc/*.rst_t)

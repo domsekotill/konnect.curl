@@ -37,6 +37,7 @@ email = "dom.sekotill@kodo.org.uk"
 Source = "https://code.kodo.org.uk/konnect/konnect.curl"
 Issues = "https://code.kodo.org.uk/konnect/konnect.curl/-/issues"
 Documentation = "https://docs.kodo.org.uk/konnect.curl"
+Changelog = "https://docs.kodo.org.uk/konnect.curl/changelog.html"
 
 
 [build-system]
