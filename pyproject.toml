@@ -1,6 +1,6 @@
 [project]
 name = "konnect.curl"
-version = "0.2.5"
+version = "0.3.0"
 description = "Pythonic, asynchronous interface to Curl (cURL) using `anyio`"
 license = {file = "LICENCE.txt"}
 readme = "README.md"
@@ -12,13 +12,13 @@ classifiers = [
 	"Topic :: Internet",
 ]
 
-requires-python = "~=3.11"
+requires-python = ">=3.13"
 dependencies = [
 	"anyio ~=4.7",
 	"kodo.quantities ~=0.1.1",
-	"pycurl >=7.45.3, <8",
 	"pyasn1",
 	"pyasn1-modules",
+	"pycurl >=7.45.7, <8",
 ]
 
 [project.optional-dependencies]
@@ -62,7 +62,6 @@ flake8-print = ["-*"]
 
 
 [tool.pyright]
-pythonVersion = "3.11"
 include = ["konnect", "tests"]
 typeCheckingMode = "strict"
 reportMissingModuleSource = "none"
