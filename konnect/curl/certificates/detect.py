@@ -6,7 +6,6 @@ Functions for detecting encodings of files or in-memory byte strings
 
 from pathlib import Path
 from typing import Final
-from typing import TypeAlias
 
 from pyasn1.codec.der import decoder
 from pyasn1.error import PyAsn1Error
@@ -36,10 +35,10 @@ __all__ = [
 
 MAX_READ_SIZE: Final = 2**14  # 16kiB
 
-CertificateFile: TypeAlias = (
+type CertificateFile = (
 	EncodedFile[AsciiArmored] | EncodedFile[Certificate] | EncodedFile[Pkcs12]
 )
-PrivateKeyFile: TypeAlias = (
+type PrivateKeyFile = (
 	EncodedFile[AsciiArmored] | EncodedFile[Pkcs12] | EncodedFile[PrivateKey]
 )
 

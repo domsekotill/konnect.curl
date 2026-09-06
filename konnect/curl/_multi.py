@@ -7,8 +7,6 @@ from collections.abc import Iterator
 from contextlib import asynccontextmanager
 from typing import Final
 from typing import Literal
-from typing import TypeAlias
-from typing import TypeVar
 
 import anyio
 import pycurl
@@ -23,9 +21,7 @@ from ._enums import Time
 from ._exceptions import CurlError
 from .abc import RequestProtocol
 
-U = TypeVar("U")
-R = TypeVar("R")
-Event: TypeAlias = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], int]
+type Event = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], int]
 
 INFO_READ_SIZE: Final = 10
 
@@ -130,9 +126,7 @@ class Multi:
 			yield from ((handle, pycurl.E_OK) for handle in complete)
 			yield from ((handle, res) for (handle, res, _) in failed)
 
-	async def _govern_transfer(
-		self, request: RequestProtocol[U, R], handle: pycurl.Curl
-	) -> None:
+	async def _govern_transfer(self, request: RequestProtocol, handle: pycurl.Curl) -> None:
 		# Await _single_event() repeatedly until the wanted handle is completed.
 		# Store all intermediate completed handles and notify interested tasks.
 		remaining = -1
@@ -156,7 +150,7 @@ class Multi:
 		# AssertionError if it does complete
 		raise AssertionError("no response detected after all handles processed")
 
-	async def process(self, request: RequestProtocol[U, R]) -> U | R:
+	async def process[U, R](self, request: RequestProtocol[U, R]) -> U | R:
 		"""
 		Perform a request as described by a Curl instance
 		"""

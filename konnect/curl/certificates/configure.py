@@ -11,8 +11,6 @@ import re
 from os import fspath
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import TypeAlias
-from typing import TypeVar
 from typing import assert_never
 from typing import overload
 
@@ -27,17 +25,15 @@ from .encodings import Pkcs12
 from .encodings import PrivateKey
 from .files import EncodedFile
 
-ContainerT = TypeVar("ContainerT", AsciiArmored, Pkcs12)
-EncodedT = TypeVar("EncodedT", bound=Encoding)
-RawT = TypeVar("RawT", Certificate, PrivateKey)
-
-CommonEncodedSource: TypeAlias = (
+type CommonEncodedSource = (
 	AsciiArmored | Pkcs12 | EncodedFile[AsciiArmored] | EncodedFile[Pkcs12]
 )
-EncodedSource: TypeAlias = CommonEncodedSource | RawT | EncodedFile[RawT]
+type EncodedSource[RawT: (Certificate, PrivateKey)] = (
+	CommonEncodedSource | RawT | EncodedFile[RawT]
+)
 
-CertificateSource: TypeAlias = EncodedSource[Certificate]
-PrivateKeySource: TypeAlias = EncodedSource[PrivateKey]
+type CertificateSource = EncodedSource[Certificate]
+type PrivateKeySource = EncodedSource[PrivateKey]
 
 __all__ = [
 	"CertificateSource",
@@ -321,7 +317,7 @@ def _configure_pkcs12_handle(
 			handle.setopt(pycurl.SSLCERT_BLOB, blob)
 
 
-def _container_blob(
+def _container_blob[ContainerT: (AsciiArmored, Pkcs12)](
 	cls: type[ContainerT],
 	cert_source: CertificateSource,
 	key_source: PrivateKeySource | None,
@@ -362,7 +358,7 @@ def _container_blob(
 	return cls.new(certificate=cert, private_key=key)
 
 
-def _container_file(
+def _container_file[ContainerT: (AsciiArmored, Pkcs12)](
 	cls: type[ContainerT],
 	cert_source: CertificateSource,
 	key_source: PrivateKeySource | None,
@@ -373,7 +369,7 @@ def _container_file(
 	return _as_file(blob)
 
 
-def _as_file(encoded_data: EncodedT) -> EncodedFile[EncodedT]:
+def _as_file[EncodedT: Encoding](encoded_data: EncodedT) -> EncodedFile[EncodedT]:
 	sha1 = hashlib.sha1()
 	if cert := encoded_data.certificate():
 		sha1.update(cert)

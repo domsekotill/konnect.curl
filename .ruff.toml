@@ -10,6 +10,11 @@ select = [
 	# pyflakes
 	# --------
 
+	# ENABLE "%s imported but unused; ..."
+	# Replace unimport with this due to unimport's Python parsing lagging
+	# severely behind.
+	"F401",
+
 	# ENABLE "Undefined name %s in __all__"
 	"F822",
 

@@ -18,11 +18,7 @@ from typing import overload
 from .ascii_armor import ArmoredData
 
 if TYPE_CHECKING:
-	from typing import TypeVar
-
 	from ..abc import Hash
-
-	PrivateKeyT = TypeVar("PrivateKeyT", bound=PrivateKey)
 
 __all__ = [
 	"AsciiArmored",
@@ -220,7 +216,9 @@ class AsciiArmored(bytes):
 	def find_first(self, kind: type[Certificate], /) -> Certificate: ...
 
 	@overload
-	def find_first(self, kind: type[PrivateKeyT], /) -> PrivateKeyT: ...
+	def find_first[PrivateKeyT: PrivateKey](
+		self, kind: type[PrivateKeyT], /
+	) -> PrivateKeyT: ...
 
 	def find_first(
 		self, kind: type[Certificate] | type[PrivateKey]

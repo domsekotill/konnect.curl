@@ -10,10 +10,6 @@ or subclassed by users.
 from collections.abc import Buffer
 from typing import Protocol
 from typing import Self
-from typing import TypeVar
-
-U_co = TypeVar("U_co", covariant=True)
-R_co = TypeVar("R_co", covariant=True)
 
 
 class ConfigHandle(Protocol):
@@ -70,7 +66,7 @@ class GetInfoHandle(Protocol):
 		...
 
 
-class RequestProtocol(Protocol[U_co, R_co]):
+class RequestProtocol[UpdateT = object, ResultT = object](Protocol):
 	"""
 	Request classes that are passed to `Multi.process()` must implement this protocol
 	"""
@@ -90,7 +86,7 @@ class RequestProtocol(Protocol[U_co, R_co]):
 		"""
 		...
 
-	def get_update(self) -> U_co:
+	def get_update(self) -> UpdateT:
 		"""
 		Return a waiting update or raise `LookupError` if there is none
 
@@ -105,7 +101,7 @@ class RequestProtocol(Protocol[U_co, R_co]):
 		"""
 		...
 
-	def completed(self, handle: GetInfoHandle, /) -> R_co:
+	def completed(self, handle: GetInfoHandle, /) -> ResultT:
 		"""
 		Indicate that Curl has completed processing the handle and return a final response
 

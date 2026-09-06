@@ -1,4 +1,4 @@
-# Copyright 2025  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2025-2026  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 ASCII armor is a 7-bit safe encoding method for various types of data to be embedded in text
@@ -12,11 +12,10 @@ from collections.abc import Sequence
 from typing import Literal
 from typing import Self
 from typing import SupportsIndex
-from typing import TypeAlias
 from typing import overload
 
-BytesType: TypeAlias = Sequence[SupportsIndex]
-Header: TypeAlias = tuple[str, str]
+type BytesType = Sequence[SupportsIndex]
+type Header = tuple[str, str]
 
 CHR_EQL = ord("=")
 CHR_DASH = ord("-")
