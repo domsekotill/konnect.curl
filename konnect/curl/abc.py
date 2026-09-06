@@ -1,4 +1,4 @@
-# Copyright 2023-2024  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2024, 2026  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Abstract protocols which may be implemented by users
@@ -12,10 +12,6 @@ from typing import TypeVar
 
 U_co = TypeVar("U_co", covariant=True)
 R_co = TypeVar("R_co", covariant=True)
-
-
-# TODO(dom): Make concrete proxies and convert Pycurl exceptions to package exceptions
-# https://code.kodo.org.uk/konnect/konnect.curl/-/work_items/6
 
 
 class ConfigHandle(Protocol):
