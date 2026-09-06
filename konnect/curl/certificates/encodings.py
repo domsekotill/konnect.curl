@@ -1,4 +1,4 @@
-# Copyright 2025  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2025-2026  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Classes for various DER encoded objects, with ASCII armoring and file storage for them
@@ -19,6 +19,8 @@ from .ascii_armor import ArmoredData
 
 if TYPE_CHECKING:
 	from typing import TypeVar
+
+	from ..abc import Hash
 
 	PrivateKeyT = TypeVar("PrivateKeyT", bound=PrivateKey)
 
@@ -68,13 +70,11 @@ class Certificate(bytes):
 		"""
 		return self
 
-	def fingerprint(self) -> str:
+	def fingerprint(self) -> Hash:
 		"""
-		Return the SHA1 hash of the certificate as a hexadecimal string
+		Return the SHA1 hash of the certificate
 		"""
-		# TODO(dom): Would like to return hashlib.HASH but not currently allowed by typeshed
-		# https://code.kodo.org.uk/konnect/konnect.curl/-/issues/9
-		return hashlib.sha1(self).hexdigest()
+		return hashlib.sha1(self)
 
 	def certificate(self) -> Self:
 		"""
