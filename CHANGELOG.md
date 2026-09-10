@@ -2,6 +2,25 @@ Changelog
 =========
 
 
+0.3.0 (2026-10-30)
+------------------
+
+### Changed
+
+- Minimum Python version is now 3.13
+- Renamed `konnect.curl.abc.RequestProtocol` to `Request` (#19)
+- Removed `konnect.curl.requests.Request` (#19)
+- Removed "docs" optional extra dependencies; these are in fact development dependencies 
+  (#18)
+- Changed return of `konnect.curl.certificates.Certificate.fingerprint()` to a hashlib 
+  object (#15, #9)
+
+### Added
+
+- New class `konnect.curl.URL` (#11)
+- New function `konnect.curl.xxx.get_writer()` (#7, #2)
+
+
 0.2.5 (2026-09-04)
 ------------------
 

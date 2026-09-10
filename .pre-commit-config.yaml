@@ -75,7 +75,7 @@ repos:
     stages: [pre-commit, manual]
 
 - repo: https://github.com/RobertCraigie/pyright-python
-  rev: v1.1.407
+  rev: v1.1.413
   hooks:
   - id: pyright
     additional_dependencies: &deps
@@ -86,6 +86,7 @@ repos:
     - types-pyasn1
     - types-pycurl
     - types-toml
+    - typing-extensions ~=4.16
   - id: pyright
     additional_dependencies: *deps
     stages: ["pre-push", "manual"]

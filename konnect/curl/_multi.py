@@ -13,6 +13,7 @@ import pycurl
 from anyio.abc import ObjectReceiveStream
 from anyio.abc import ObjectSendStream
 from kodo.quantities import Quantity
+from typing_extensions import Sentinel as sentinel  # Python <3.15 support
 
 from ._enums import MILLISECONDS
 from ._enums import SECONDS
@@ -20,8 +21,11 @@ from ._enums import SocketEvt
 from ._enums import Time
 from ._exceptions import CurlError
 from .abc import RequestProtocol
+from .abc import UpdateHandler
 
 type Event = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], int]
+
+COMPLETED = sentinel("COMPLETED")
 
 INFO_READ_SIZE: Final = 10
 
@@ -126,14 +130,14 @@ class Multi:
 			yield from ((handle, pycurl.E_OK) for handle in complete)
 			yield from ((handle, res) for (handle, res, _) in failed)
 
-	async def _govern_transfer(self, request: RequestProtocol, handle: pycurl.Curl) -> None:
+	async def _govern_transfer(self, updates: UpdateHandler, handle: pycurl.Curl) -> None:
 		# Await _single_event() repeatedly until the wanted handle is completed.
 		# Store all intermediate completed handles and notify interested tasks.
 		remaining = -1
 		while remaining:
 			remaining = await self._single_event()
 			self._completed.update(self._yield_complete())
-			has_resp = request.has_update()
+			has_resp = updates.has_update()
 			if not has_resp and not self._completed:
 				continue
 			async with self._perform_cond:
@@ -150,6 +154,33 @@ class Multi:
 		# AssertionError if it does complete
 		raise AssertionError("no response detected after all handles processed")
 
+	async def _process_updates[T](
+		self, updates: UpdateHandler[T], handle: pycurl.Curl
+	) -> T | COMPLETED:
+		# Await and return an update event from the update handler, or return None if the
+		# curl handle completes without any further updates issued.
+		#
+		# A Request is a specific type of UpdateHandler that Multi.process() passes to this
+		# method. Splitting this functionality from Multi.process() allows alternative
+		# UpdateHandlers to be used for specific portions of a transfer process; for
+		# example, write updates.
+		while handle not in self._completed:
+			# If no task is governing the transfer, self-delegate the role to ourselves and
+			# govern transfers until an update is passed back through 'updates'.
+			if not self._governor_delegated:
+				self._governor_delegated = True
+				try:
+					await self._govern_transfer(updates, handle)
+				finally:
+					self._governor_delegated = False
+			# Otherwise await a notification of completed handles
+			else:
+				async with self._perform_cond:
+					await self._perform_cond.wait()
+			if updates.has_update():
+				return updates.get_update()
+		return COMPLETED
+
 	async def process[U, R](self, request: RequestProtocol[U, R]) -> U | R:
 		"""
 		Perform a request as described by a Curl instance
@@ -157,21 +188,9 @@ class Multi:
 		if request.has_update():
 			return request.get_update()
 		handle = self._get_handle(request)
-		while handle not in self._completed:
-			# If no task is governing the transfer manager, self-delegate the role to
-			# ourselves and govern transfers until `handle` completes.
-			if not self._governor_delegated:
-				self._governor_delegated = True
-				try:
-					await self._govern_transfer(request, handle)
-				finally:
-					self._governor_delegated = False
-			# Otherwise await a notification of completed handles
-			else:
-				async with self._perform_cond:
-					await self._perform_cond.wait()
-			if request.has_update():
-				return request.get_update()
+		if (update := await self._process_updates(request, handle)) is not COMPLETED:
+			return update
+		assert handle in self._completed
 		match self._completed.pop(handle):
 			case pycurl.E_OK:
 				self._del_handle(request)

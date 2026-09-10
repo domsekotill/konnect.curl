@@ -66,19 +66,14 @@ class GetInfoHandle(Protocol):
 		...
 
 
-class RequestProtocol[UpdateT = object, ResultT = object](Protocol):
+class UpdateHandler[UpdateT = object](Protocol):
 	"""
-	Request classes that are passed to `Multi.process()` must implement this protocol
+	Implementations of this protocol control when and what is returned from `Multi.process()`
+
+	Update handlers form a part of the `RequestHandler` protocol and are used internally for
+	controlling when program flow exits from the «I/O ↔ libcurl ↔ callbacks» flow that forms
+	the core of the `Multi.process()` awaitable.
 	"""
-
-	def configure_handle(self, handle: ConfigHandle, /) -> None:
-		"""
-		Configure a Curl handle for the request by calling `ConfigHandle` methods
-
-		See https://curl.se/libcurl/c/curl_easy_setopt.html for a list of options and what
-		they do.
-		"""
-		...
 
 	def has_update(self) -> bool:
 		"""
@@ -98,6 +93,21 @@ class RequestProtocol[UpdateT = object, ResultT = object](Protocol):
 		times updates will be returned and what objects to return as updates: it may be
 		different objects for different stages of a transfer; or there may never be interim
 		updates.
+		"""
+		...
+
+
+class RequestProtocol[UpdateT = object, ResultT = object](UpdateHandler[UpdateT], Protocol):
+	"""
+	Request classes that are passed to `Multi.process()` must implement this protocol
+	"""
+
+	def configure_handle(self, handle: ConfigHandle, /) -> None:
+		"""
+		Configure a Curl handle for the request by calling `ConfigHandle` methods
+
+		See https://curl.se/libcurl/c/curl_easy_setopt.html for a list of options and what
+		they do.
 		"""
 		...
 
