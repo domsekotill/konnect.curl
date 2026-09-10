@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from collections.abc import Iterator
 from contextlib import asynccontextmanager
 from typing import Final
@@ -203,7 +203,7 @@ class Multi:
 
 
 @asynccontextmanager
-async def _make_evt_channel() -> AsyncIterator[
+async def _make_evt_channel() -> AsyncGenerator[
 	tuple[ObjectSendStream[Event | None], ObjectReceiveStream[Event | None]]
 ]:
 	send, recv = anyio.create_memory_object_stream[Event | None](1)
