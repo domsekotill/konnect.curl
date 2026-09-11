@@ -36,7 +36,7 @@ repos:
   - id: gitlint
 
 - repo: https://code.kodo.org.uk/dom/pre-commit-hooks
-  rev: v0.6.3
+  rev: v1.0.0
   hooks:
   - id: check-executable-modes
   - id: check-for-squash
@@ -59,15 +59,8 @@ repos:
   - id: pyupgrade
     args: [--py311-plus]
 
-- repo: https://github.com/pycqa/isort
-  rev: 7.0.0
-  hooks:
-  - id: isort
-    types: [python]
-    stages: [pre-commit, manual]
-
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.14.10
+  rev: v0.16.6
   hooks:
   - id: ruff-check
     args: [--fix, --unsafe-fixes]
