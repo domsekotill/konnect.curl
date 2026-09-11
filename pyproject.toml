@@ -30,6 +30,8 @@ docs = [
 	"sphinx-rtd-theme",
 ]
 stub-gen = [
+	"build ~=1.6",
+	"mypy >=1.14",
 	"tomli-w ~=1.0",
 ]
 

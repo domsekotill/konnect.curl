@@ -16,9 +16,17 @@ from shutil import copyfile
 from shutil import rmtree
 from subprocess import run
 from typing import TYPE_CHECKING
-from typing import Self
 
-import tomli_w
+INSTALL_MSG = """
+Please install the "stub-gen" dependency group in your development virtual environment.
+i.e.:
+  pip install --group stub-gen
+"""
+
+try:
+	import tomli_w
+except ModuleNotFoundError:
+	sys.exit(INSTALL_MSG)
 
 if TYPE_CHECKING:
 	from collections.abc import Iterator
@@ -108,42 +116,18 @@ def get_str(config: Config, *path: str | int) -> str:
 	return value
 
 
-class Environment:
+def exec_module(module: str, *args: str | Path) -> None:
 	"""
-	A simple virtual environment (venv) interface
+	Execute the named module from the environment with the given arguments
 	"""
+	run([sys.executable, "-m", module, *args], check=True)
 
-	def __init__(self, path: Path) -> None:
-		self.path = path
-		self.bin = path / "bin"
-		self.python = self.bin / "python"
 
-	def __enter__(self) -> Self:
-		if self.python.is_file():
-			return self
-		run([sys.executable, "-mvenv", self.path], check=True)
-		return self
-
-	def __exit__(self, *exc_info: object) -> None:
-		pass
-
-	def install(self, package: str) -> None:
-		"""
-		Install the named package in the environment
-		"""
-		self.exec_module("pip", "install", package)
-
-	def exec_module(self, module: str, *args: str | Path) -> None:
-		"""
-		Execute the named module from the environment with the given arguments
-		"""
-		run([self.python, "-m", module, *args], check=True)
-
-	def run(self, name: str, *args: str | Path) -> None:
-		"""
-		Execute a binary or script installed in the environment
-		"""
-		run([self.bin / name, *args], check=True)
+def exec_bin(name: str, *args: str | Path) -> None:
+	"""
+	Execute a binary or script installed in the environment
+	"""
+	run([Path(sys.exec_prefix, "bin", name), *args], check=True)
 
 
 class Project:
@@ -218,9 +202,8 @@ class Package:
 		with build_dir.joinpath("pyproject.toml").open("wb") as config:
 			tomli_w.dump(self.complete_config(), config)
 		self.copy_docs(build_dir)
-		with Environment(build_dir / "stub.venv") as env:
-			self.make_stubs(build_dir, env)
-			self.build_package(build_dir, env)
+		self.make_stubs(build_dir)
+		self.build_package(build_dir)
 
 	def copy_docs(self, build_dir: Path) -> None:
 		"""
@@ -228,12 +211,11 @@ class Package:
 		"""
 		copyfile(self.project.root / "LICENCE.txt", build_dir / "LICENCE.txt")
 
-	def make_stubs(self, build_dir: Path, env: Environment) -> None:
+	def make_stubs(self, build_dir: Path) -> None:
 		"""
 		Generate type stub package
 		"""
-		env.install("mypy")
-		env.run(
+		exec_bin(
 			"stubgen",
 			"--verbose",
 			"--output",
@@ -249,12 +231,11 @@ class Package:
 			build_dir / "konnect-stubs/curl/_enums.pyi",
 		)
 
-	def build_package(self, build_dir: Path, env: Environment) -> None:
+	def build_package(self, build_dir: Path) -> None:
 		"""
 		Build distribution packages from generated sources
 		"""
-		env.install("build")
-		env.exec_module(
+		exec_module(
 			"build",
 			"--outdir",
 			self.project.root / "dist",
