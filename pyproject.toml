@@ -29,6 +29,9 @@ docs = [
 	"sphinx ~=9.0",
 	"sphinx-rtd-theme",
 ]
+stub-gen = [
+	"tomli-w ~=1.0",
+]
 
 [[project.authors]]
 name = "Dom Sekotill"

@@ -83,6 +83,7 @@ repos:
     - kodo.quantities ~=0.1.1
     - pyasn1-modules
     - pytest
+    - tomli-w ~=1.0
     - types-pyasn1
     - types-pycurl
     - types-toml

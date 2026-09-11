@@ -1,41 +1,52 @@
 #!/usr/bin/env python3
 #
-# Copyright 2023-2025  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2026  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Script for generating stub packages from konnect.curl source code
 """
 
+from __future__ import annotations
+
 import sys
-from collections.abc import Iterator
+import tomllib
 from copy import deepcopy
 from pathlib import Path
 from shutil import copyfile
 from shutil import rmtree
 from subprocess import run
+from typing import TYPE_CHECKING
 from typing import Self
-from typing import TypeAlias
 
-import toml
+import tomli_w
+
+if TYPE_CHECKING:
+	from collections.abc import Iterator
+	from collections.abc import Mapping
+	from collections.abc import Sequence
+
+type ConfigType = Mapping[str, ConfigType] | Sequence[ConfigType] | int | float | bool | str
+type Config = Mapping[str, ConfigType]
+
 
 CWD = Path(".")
 
-POETRY_CONFIG = {
+POETRY_CONFIG: Config = {
 	"name": "types-konnect.curl",
 	"version": "",
 	"description": "static type stubs for konnect.curl",
 	"packages": [
 		{"include": "konnect-stubs"},
 	],
-	"authors": [],
-	"dependencies": {},
+	"authors": list[str](),
+	"dependencies": dict[str, str](),
 	"include": [
 		"LICENCE.txt",
 	],
 	"license": "MPL-2.0",
 }
 
-STUB_PKG_CONFIG = {
+STUB_PKG_CONFIG: Config = {
 	"build-system": {
 		"build-backend": "poetry.core.masonry.api",
 		"requires": ["poetry_core>=1.0.0"],
@@ -44,20 +55,30 @@ STUB_PKG_CONFIG = {
 }
 
 
-Config: TypeAlias = dict[str, object]
-
-
-def get_object(config: Config, *path: str | int) -> object:
+def get_object(config: Config, *path: str | int) -> ConfigType:
 	"""
 	Return an object from the configuration object accessed by path keys/indexes
 	"""
-	obj: object = config
+	obj: ConfigType = config
 	for step in path:
-		obj = obj[step]  # type: ignore
+		match obj:
+			case list():
+				if not isinstance(step, int):
+					msg = f"need a list index, got {step!r}"
+					raise TypeError(msg)
+				obj = obj[step]
+			case dict():
+				if not isinstance(step, str):
+					msg = f"need a mapping key string, got {step!r}"
+					raise TypeError(msg)
+				obj = obj[step]
+			case _:
+				msg = f"got a list index or mapping key where none expected"
+				raise TypeError(msg)
 	return obj
 
 
-def get_config(config: Config, *path: str | int) -> Config:
+def get_config(config: Config, *path: str | int) -> dict[str, ConfigType]:
 	"""
 	Get a sub-config mapping from the configuration object accessed by path keys/indexes
 	"""
@@ -67,7 +88,7 @@ def get_config(config: Config, *path: str | int) -> Config:
 	return value
 
 
-def get_array(config: Config, *path: str | int) -> list[object]:
+def get_array(config: Config, *path: str | int) -> list[ConfigType]:
 	"""
 	Return a list from the configuration object accessed by path keys/indexes
 	"""
@@ -140,8 +161,8 @@ class Project:
 		The project configuration (pyproject.toml) as a configuration mapping
 		"""
 		if not self._config:
-			with open("pyproject.toml") as config:
-				self._config = toml.load(config)
+			with open("pyproject.toml", "rb") as config:
+				self._config = tomllib.load(config)
 		return self._config
 
 	def get_version(self) -> str:
@@ -194,8 +215,8 @@ class Package:
 		if build_dir.exists():
 			rmtree(build_dir)
 		build_dir.mkdir(parents=True)
-		with build_dir.joinpath("pyproject.toml").open("w") as config:
-			toml.dump(self.complete_config(), config)
+		with build_dir.joinpath("pyproject.toml").open("wb") as config:
+			tomli_w.dump(self.complete_config(), config)
 		self.copy_docs(build_dir)
 		with Environment(build_dir / "stub.venv") as env:
 			self.make_stubs(build_dir, env)
