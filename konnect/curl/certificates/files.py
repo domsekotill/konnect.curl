@@ -22,12 +22,11 @@ class EncodedFile[EncodingT: Encoding]:
 	"""
 
 	def __init__(self, contents: EncodingT, path: Path) -> None:
-		self.contents = contents
-		self.path = path
+		self.contents: Final = contents
+		self.path: Final = path
 
-	@classmethod
+	@staticmethod
 	def read[E: Encoding](
-		cls: type[EncodedFile[E]],
 		path: Path,
 		encoding: type[E],
 		/,
@@ -46,7 +45,7 @@ class EncodedFile[EncodingT: Encoding]:
 		"""
 		with path.open("rb") as handle:
 			contents = encoding.from_bytes(handle.read(maxsize))
-		return cls(contents, path)
+		return EncodedFile(contents, path)
 
 	@staticmethod
 	def write[E: Encoding](
