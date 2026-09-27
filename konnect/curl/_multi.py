@@ -13,8 +13,8 @@ import pycurl
 from anyio.abc import ObjectReceiveStream
 from anyio.abc import ObjectSendStream
 from kodo.quantities import Quantity
-from typing_extensions import Sentinel as sentinel  # Python <3.15 support
 
+from ._enums import COMPLETED
 from ._enums import MILLISECONDS
 from ._enums import SECONDS
 from ._enums import SocketEvt
@@ -24,8 +24,6 @@ from .abc import RequestProtocol
 from .abc import UpdateHandler
 
 type Event = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], int]
-
-COMPLETED = sentinel("COMPLETED")
 
 INFO_READ_SIZE: Final = 10
 
@@ -157,8 +155,8 @@ class Multi:
 	async def _process_updates[T](
 		self, updates: UpdateHandler[T], handle: pycurl.Curl
 	) -> T | COMPLETED:
-		# Await and return an update event from the update handler, or return None if the
-		# curl handle completes without any further updates issued.
+		# Await and return an update event from the update handler, or return COMPLETED if
+		# the curl handle completes without any further updates issued.
 		#
 		# A Request is a specific type of UpdateHandler that Multi.process() passes to this
 		# method. Splitting this functionality from Multi.process() allows alternative

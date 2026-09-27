@@ -1,14 +1,19 @@
-# Copyright 2023-2024  Dom Sekotill <dom.sekotill@kodo.org.uk>
+# Copyright 2023-2024, 2026  Dom Sekotill <dom.sekotill@kodo.org.uk>
 
 """
 Enum classes for other modules
 """
+
+from __future__ import annotations
 
 import enum
 from typing import Final
 
 import pycurl
 from kodo.quantities import QuantityUnit
+from typing_extensions import Sentinel as sentinel  # Python <3.15 support
+
+COMPLETED = sentinel("COMPLETED")
 
 
 class SocketEvt(enum.Flag):
