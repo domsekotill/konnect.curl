@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 from collections.abc import Iterator
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 from typing import Final
 from typing import Literal
 
@@ -20,8 +21,13 @@ from ._enums import SECONDS
 from ._enums import SocketEvt
 from ._enums import Time
 from ._exceptions import CurlError
+from ._streams import ReadStream
+from ._streams import WriteStream
 from .abc import RequestProtocol
 from .abc import UpdateHandler
+
+if TYPE_CHECKING:
+	import anyio.abc
 
 type Event = tuple[Literal[SocketEvt.IN, SocketEvt.OUT], int]
 
@@ -32,9 +38,10 @@ class Multi:
 	"""
 	A wrapper around `pycurl.CurlMulti` to bind it with Anyio-supported event frameworks
 
-	Users should treat this class as a black-box.  Only the `process()` method is available.
-	There are no other methods or attributes they should attempt to call or modify as doing
-	so will have undefined results.
+	Users should treat this class as a black-box.  Only the `process()`, `get_send_stream()`
+	and `get_receive_stream()` methods are available. There are no other methods or
+	attributes they should attempt to call or override as doing so will have undefined
+	results.
 	"""
 
 	def __init__(self) -> None:
@@ -198,6 +205,24 @@ class Multi:
 				errstr = handle.errstr()
 				self._del_handle(request)
 				raise CurlError(err, errstr)
+
+	def get_send_stream(self, request: RequestProtocol) -> anyio.abc.ByteSendStream:
+		"""
+		Return a writable bytes stream for the upload portion of a transfer
+
+		The returned stream object implements `anyio.abc.ByteSendStream`.
+		"""
+		handle = self._get_handle(request)
+		return WriteStream(self._process_updates, handle)
+
+	def get_receive_stream(self, request: RequestProtocol) -> anyio.abc.ByteReceiveStream:
+		"""
+		Return a readable bytes stream for the download portion of a transfer
+
+		The returned stream object implements `anyio.abc.ByteReceiveStream`.
+		"""
+		handle = self._get_handle(request)
+		return ReadStream(self._process_updates, handle)
 
 
 @asynccontextmanager

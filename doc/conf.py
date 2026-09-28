@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 
@@ -40,5 +42,6 @@ myst_substitutions = {}
 
 intersphinx_mapping = {
 	"python": ("https://docs.python.org/3", None),
+	"anyio": ("https://anyio.readthedocs.io/en/stable", None),
 	"kodo.quantities": ("https://docs.kodo.org.uk/kodo.quantities", None),
 }

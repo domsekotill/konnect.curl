@@ -78,7 +78,7 @@ repos:
     - pytest
     - tomli-w ~=1.0
     - types-pyasn1
-    - types-pycurl
+    - types-pycurl ~=7.48
     - types-toml
     - typing-extensions ~=4.16
   - id: pyright

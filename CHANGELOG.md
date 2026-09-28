@@ -18,7 +18,11 @@ Changelog
 ### Added
 
 - New class `konnect.curl.URL` (#11)
-- New function `konnect.curl.xxx.get_writer()` (#7, #2)
+- New methods on `konnect.curl.Multi`: `get_send_stream` and `get_receive_stream` (#7, #2)
+
+### Deprecated
+
+- The `ConfigHandle.pause()` method is deprecated in favour of using streams from `Multi`.
 
 
 0.2.5 (2026-09-04)

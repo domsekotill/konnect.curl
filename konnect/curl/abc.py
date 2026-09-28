@@ -7,9 +7,12 @@ Abstract protocols which may be implemented by users
 or subclassed by users.
 """
 
+from __future__ import annotations
+
 from collections.abc import Buffer
 from typing import Protocol
 from typing import Self
+from warnings import deprecated
 
 
 class ConfigHandle(Protocol):
@@ -32,6 +35,9 @@ class ConfigHandle(Protocol):
 		"""
 		...
 
+	@deprecated(
+		"use Multi.get_send_stream() and Multi.get_receive_stream() to control I/O flow"
+	)
 	def pause(self, state: int, /) -> None:
 		"""
 		Set the paused state of a Curl handle

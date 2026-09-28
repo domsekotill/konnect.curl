@@ -52,6 +52,19 @@ to use multiple instances it is recommended for performance and resource usage r
 use only one.  
 
 
+Streams
+-------
+
+Streams can be created with the `Multi` methods `Multi.get_send_stream()` and 
+`Multi.get_receive_stream()`.  The streams implement the interfaces for byte streams in 
+*anyio*: `anyio.abc.ByteSendStream` and `anyio.abc.ByteReceiveStream` respectively.  When 
+their respective `send()` and `receive()` methods are awaited they run the same procedures 
+as `Multi.process()` to progress the transfer.
+
+Streams SHOULD be used as async context managers to ensure they are closed.  They MUST be 
+closed for transfers to continue after the main body has been transferred.
+
+
 [libcurl multi]:
 	https://curl.se/libcurl/c/libcurl-multi.html
 	"libcurl mutli interface overview"
