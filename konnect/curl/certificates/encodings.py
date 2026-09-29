@@ -18,7 +18,7 @@ from typing import overload
 from .ascii_armor import ArmoredData
 
 if TYPE_CHECKING:
-	from ..abc import Hash
+	from .._abc import Hash
 
 __all__ = [
 	"AsciiArmored",
