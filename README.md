@@ -82,8 +82,8 @@ closed for transfers to continue after the main body has been transferred.
   "GitHub"
 
 [github-link]:
-	https://github.com/domsekotill/kilter.protocol
-	"Konnect at github.com"
+  https://github.com/domsekotill/konnect.curl
+  "konnect.curl at github.com"
 
 [docs-ico]:
 	https://img.shields.io/badge/Documentation-docs.kodo.org.uk-blue.svg
