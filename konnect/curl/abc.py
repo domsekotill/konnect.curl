@@ -9,8 +9,10 @@ or subclassed by users.
 
 from __future__ import annotations
 
+import warnings
 from typing import Protocol
-from warnings import deprecated
+
+from . import _docs
 
 
 class ConfigHandle(Protocol):
@@ -33,8 +35,12 @@ class ConfigHandle(Protocol):
 		"""
 		...
 
-	@deprecated(
-		"use Multi.get_send_stream() and Multi.get_receive_stream() to control I/O flow"
+	@warnings.deprecated(
+		"use Multi.get_send_stream() and Multi.get_receive_stream() to control I/O flow",
+	)
+	@_docs.deprecated(
+		reason="Use `Multi.get_send_stream()` and `Multi.get_receive_stream()` to control I/O flow",
+		version="0.3.0",
 	)
 	def pause(self, state: int, /) -> None:
 		"""

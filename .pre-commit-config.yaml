@@ -73,6 +73,7 @@ repos:
   - id: pyright
     additional_dependencies: &deps
     - anyio ~=4.7
+    - deprecated ~=3.0
     - kodo.quantities ~=0.1.1
     - pyasn1-modules
     - pytest
