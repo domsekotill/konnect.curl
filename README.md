@@ -26,25 +26,26 @@ points in a transfer.  The transfer commences when an instance of the request cl
 passed to `konnect.curl.Multi.process()` and the returned awaitable is awaited:
 
 - `configure_handle` is called prior to connection with a single 
-	`konnect.curl.abc.ConfigHandle` object as an argument.  This object can be used to 
-	configure the request in a manner familiar to users of libcurl, by calling the 
-	`konnect.curl.abc.ConfigHandle.setopt()` method of the object.  In particular users should 
-	configure libcurl callbacks to handle various additional events specific to the desired 
-	protocol.
+  `konnect.curl.abc.ConfigHandle` object as an argument.  This object can be used to 
+  configure the request in a manner familiar to users of libcurl, by calling the 
+  `konnect.curl.abc.ConfigHandle.setopt()` method of the object.  In particular users should 
+  configure libcurl callbacks to handle various additional events specific to the desired 
+  protocol.
 
-- `has_update` & `get_update` are called continuously throughout the transfer. The latter, 
-	if it returns anything, interrupts the transfer and returns the value from 
-	`konnect.curl.Multi.process()`.  The user would normally then continue the transfer by 
-	calling `konnect.curl.Multi.process()` again with the same multi and request objects.  It 
-	is up to the user to recognise when the return is an interim response or a final response, 
-	normally by checking the type of the response. If the implementation has nothing to return 
-	during the transfer `has_update` can simply return `False` every time it is called.
+- The `UpdateHandler` methods `has_update` & `get_update` are called continuously throughout 
+  the transfer. The latter, if it returns anything, interrupts the transfer and returns the 
+  value from `konnect.curl.Multi.process()`.  The user would normally then continue the 
+  transfer by calling `konnect.curl.Multi.process()` again with the same multi and request 
+  objects.  It is up to the user to recognise when the return is an interim response or 
+  a final response, normally by checking the type of the response. If the implementation has 
+  nothing to return during the transfer `has_update` can simply return `False` every time it 
+  is called.
 
 - `completed` is called after the transfer is finished, with 
-	a `konnect.curl.abc.GetInfoHandle` object that may be used to examine information about 
-	the transfer in a way familiar to libcurl users, with it's 
-	`konnect.curl.abc.GetInfoHandle.getinfo()` and 
-	`konnect.curl.abc.GetInfoHandle.getinfo_raw()` methods.
+  a `konnect.curl.abc.GetInfoHandle` object that may be used to examine information about 
+  the transfer in a way familiar to libcurl users, with it's 
+  `konnect.curl.abc.GetInfoHandle.getinfo()` and 
+  `konnect.curl.abc.GetInfoHandle.getinfo_raw()` methods.
 
 
 Instances of `konnect.curl.Multi` are shareable within a thread and although it is possible 
@@ -66,8 +67,8 @@ closed for transfers to continue after the main body has been transferred.
 
 
 [libcurl multi]:
-	https://curl.se/libcurl/c/libcurl-multi.html
-	"libcurl mutli interface overview"
+  https://curl.se/libcurl/c/libcurl-multi.html
+  "libcurl mutli interface overview"
 
 [gitlab-ico]:
   https://img.shields.io/badge/GitLab-code.kodo.org.uk-blue.svg?logo=gitlab
@@ -75,7 +76,7 @@ closed for transfers to continue after the main body has been transferred.
 
 [gitlab-link]:
   https://code.kodo.org.uk/konnect/konnect.curl
-  "Konnect at code.kodo.org.uk"
+  "konnect.curl at code.kodo.org.uk"
 
 [github-ico]:
   https://img.shields.io/badge/GitHub-domsekotill/konnect.curl-blue.svg?logo=github
@@ -86,11 +87,11 @@ closed for transfers to continue after the main body has been transferred.
   "konnect.curl at github.com"
 
 [docs-ico]:
-	https://img.shields.io/badge/Documentation-docs.kodo.org.uk-blue.svg
+    https://img.shields.io/badge/Documentation-docs.kodo.org.uk-blue.svg
 
 [docs-link]:
-	https://docs.kodo.org.uk/konnect.curl/
-	"konnect.curl Documentation"
+  https://docs.kodo.org.uk/konnect.curl/
+  "konnect.curl Documentation"
 
 [pre-commit-ico]:
   https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white
