@@ -49,7 +49,7 @@ class ReadStream(anyio.abc.ByteReceiveStream):
 		self._callback = callback
 		self._handle = handle
 		self._updates = ReadHandler()
-		handle.setopt(pycurl.WRITEFUNCTION, self._updates.write)
+		handle.setopt(pycurl.WRITEFUNCTION, self._updates.write, use_memoryview=True)
 
 	async def aclose(self) -> None:
 		assert not self._updates.data
@@ -90,10 +90,10 @@ class ReadHandler:
 	def get_update(self) -> None:
 		return None
 
-	def write(self, data: bytes) -> int:
+	def write(self, data: memoryview) -> int:
 		if self.data is not None:
 			return pycurl.WRITEFUNC_PAUSE
-		self.data = data
+		self.data = data.tobytes()
 		return len(data)
 
 
