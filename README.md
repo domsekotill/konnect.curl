@@ -20,7 +20,7 @@ konnect.http) which provide enhanced interfaces for specific protocols.
 Basic Usage
 -----------
 
-Users must first create a class that implements the `konnect.curl.abc.RequestProtocol` 
+Users must first create a class that implements the `konnect.curl.abc.Request` 
 interface; the methods of this protocol are essentially hooks that are called at certain 
 points in a transfer.  The transfer commences when an instance of the request class is 
 passed to `konnect.curl.Multi.process()` and the returned awaitable is awaited:

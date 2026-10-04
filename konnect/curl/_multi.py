@@ -23,7 +23,7 @@ from ._enums import Time
 from ._exceptions import CurlError
 from ._streams import ReadStream
 from ._streams import WriteStream
-from .abc import RequestProtocol
+from .abc import Request
 from .abc import UpdateHandler
 
 if TYPE_CHECKING:
@@ -53,7 +53,7 @@ class Multi:
 		self._perform_cond = anyio.Condition()
 		self._governor_delegated = False
 		self._completed = dict[pycurl.Curl, int]()
-		self._requests = dict[RequestProtocol[object, object], pycurl.Curl]()
+		self._requests = dict[Request[object, object], pycurl.Curl]()
 
 	def _add_socket_evt(self, what: int, socket: int, *_: object) -> None:
 		# Callback registered with CURLMOPT_SOCKETFUNCTION, registers socket events the
@@ -112,7 +112,7 @@ class Multi:
 				_, running = self._handler.socket_action(fd, pycurl.CSELECT_OUT)
 		return running
 
-	def _get_handle(self, request: RequestProtocol[object, object]) -> pycurl.Curl:
+	def _get_handle(self, request: Request[object, object]) -> pycurl.Curl:
 		try:
 			return self._requests[request]
 		except KeyError:
@@ -121,7 +121,7 @@ class Multi:
 			self._handler.add_handle(handle)
 			return handle
 
-	def _del_handle(self, request: RequestProtocol[object, object]) -> None:
+	def _del_handle(self, request: Request[object, object]) -> None:
 		handle = self._requests.pop(request)
 		self._handler.remove_handle(handle)
 		handle.close()
@@ -186,7 +186,9 @@ class Multi:
 				return updates.get_update()
 		return COMPLETED
 
-	async def process[U, R](self, request: RequestProtocol[U, R]) -> U | R:
+	async def process[UpdateT, ResultT](
+		self, request: Request[UpdateT, ResultT]
+	) -> UpdateT | ResultT:
 		"""
 		Perform a request as described by a Curl instance
 		"""
@@ -206,7 +208,7 @@ class Multi:
 				self._del_handle(request)
 				raise CurlError(err, errstr)
 
-	def get_send_stream(self, request: RequestProtocol) -> anyio.abc.ByteSendStream:
+	def get_send_stream(self, request: Request) -> anyio.abc.ByteSendStream:
 		"""
 		Return a writable bytes stream for the upload portion of a transfer
 
@@ -215,7 +217,7 @@ class Multi:
 		handle = self._get_handle(request)
 		return WriteStream(self._process_updates, handle)
 
-	def get_receive_stream(self, request: RequestProtocol) -> anyio.abc.ByteReceiveStream:
+	def get_receive_stream(self, request: Request) -> anyio.abc.ByteReceiveStream:
 		"""
 		Return a readable bytes stream for the download portion of a transfer
 

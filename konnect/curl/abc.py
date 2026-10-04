@@ -17,7 +17,7 @@ from . import _docs
 
 class ConfigHandle(Protocol):
 	"""
-	The interface provided by objects passed to `RequestProtocol.configure_handle()`
+	The interface provided by objects passed to `Request.configure_handle()`
 	"""
 
 	def setopt(self, option: int, value: object, /) -> None:
@@ -55,7 +55,7 @@ class ConfigHandle(Protocol):
 
 class GetInfoHandle(Protocol):
 	"""
-	The interface provided by objects passed to `RequestProtocol.completed()`
+	The interface provided by objects passed to `Request.completed()`
 	"""
 
 	def getinfo(self, option: int, /) -> object:
@@ -80,7 +80,7 @@ class UpdateHandler[UpdateT = object](Protocol):
 	"""
 	Implementations of this protocol control when and what is returned from `Multi.process()`
 
-	Update handlers form a part of the `RequestHandler` protocol and are used internally for
+	Update handlers form a part of the `Request` protocol and are used internally for
 	controlling when program flow exits from the «I/O ↔ libcurl ↔ callbacks» flow that forms
 	the core of the `Multi.process()` awaitable.
 	"""
@@ -107,7 +107,7 @@ class UpdateHandler[UpdateT = object](Protocol):
 		...
 
 
-class RequestProtocol[UpdateT = object, ResultT = object](UpdateHandler[UpdateT], Protocol):
+class Request[UpdateT = object, ResultT = object](UpdateHandler[UpdateT], Protocol):
 	"""
 	Request classes that are passed to `Multi.process()` must implement this protocol
 	"""
