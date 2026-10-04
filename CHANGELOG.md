@@ -5,6 +5,11 @@ Changelog
 0.3.0 (2026-10-30)
 ------------------
 
+### Added
+
+- New class `konnect.curl.URL` (#11)
+- New methods on `konnect.curl.Multi`: `get_send_stream` and `get_receive_stream` (#7, #2)
+
 ### Changed
 
 - Minimum Python version is now 3.13
@@ -14,11 +19,6 @@ Changelog
   (#18)
 - Changed return of `konnect.curl.certificates.Certificate.fingerprint()` to a hashlib 
   object (#15, #9)
-
-### Added
-
-- New class `konnect.curl.URL` (#11)
-- New methods on `konnect.curl.Multi`: `get_send_stream` and `get_receive_stream` (#7, #2)
 
 ### Deprecated
 
