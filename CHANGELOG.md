@@ -7,7 +7,7 @@ Changelog
 
 ### Added
 
-- New class `konnect.curl.URL` (#11)
+- New class `konnect.curl.Url` (#11)
 - New methods on `konnect.curl.Multi`: `get_send_stream` and `get_receive_stream` (#7, #2)
 
 ### Changed
