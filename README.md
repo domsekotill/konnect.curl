@@ -14,7 +14,7 @@ Konnect
 Konnect is a project to make the power of the [libcurl multi][] feature available through 
 a Pythonic interface.  It consists of this core package (konnect.curl) through which any 
 protocol provided by libcurl can be accessed and some additional packages (e.g. 
-konnect.http) which provide enhanced interfaces for specific protocols.
+[konnect.http][]) which provide enhanced interfaces for specific protocols.
 
 
 Basic Usage
@@ -69,6 +69,10 @@ closed for transfers to continue after the main body has been transferred.
 [libcurl multi]:
   https://curl.se/libcurl/c/libcurl-multi.html
   "libcurl mutli interface overview"
+
+[konnect.http]:
+  https://docs.kodo.org.uk/konnect.http/
+  "konnect.http Documentation"
 
 [gitlab-ico]:
   https://img.shields.io/badge/GitLab-code.kodo.org.uk-blue.svg?logo=gitlab
